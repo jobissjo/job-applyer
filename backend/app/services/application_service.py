@@ -1,4 +1,6 @@
 import json
+import re
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, status
@@ -125,7 +127,7 @@ class ApplicationService:
         # Check HR Contact: either on job or in user HR contacts
         stmt_hr = select(HRContact).where(HRContact.user_id == user_id, HRContact.job_id == job_id)
         res_hr = await db.execute(stmt_hr)
-        user_hr = res_hr.scalar_one_or_none()
+        user_hr = res_hr.scalars().first()
         effective_email = user_hr.email if user_hr else job.contact_email
 
         return JobAnalyzeResponse(
@@ -235,7 +237,7 @@ class ApplicationService:
             # Check user-saved HR contact
             stmt_hr = select(HRContact).where(HRContact.user_id == user_id, HRContact.job_id == job_id)
             res_hr = await db.execute(stmt_hr)
-            user_hr = res_hr.scalar_one_or_none()
+            user_hr = res_hr.scalars().first()
             if user_hr:
                 effective_email = user_hr.email
                 hr_contact_id = user_hr.id
@@ -253,14 +255,14 @@ class ApplicationService:
             .where(Application.user_id == user_id, Application.job_id == job_id)
         )
         res_app = await db.execute(stmt_app)
-        application = res_app.scalar_one_or_none()
+        application = res_app.scalars().first()
 
         # Generate default subject if not provided
         if not email_subject:
             candidate_name = "Candidate"
             stmt_prof = select(UserProfile).where(UserProfile.user_id == user_id)
             res_prof = await db.execute(stmt_prof)
-            prof = res_prof.scalar_one_or_none()
+            prof = res_prof.scalars().first()
             if prof and prof.name:
                 candidate_name = prof.name
             email_subject = f"Application for {job.title} - {candidate_name}"
@@ -297,6 +299,35 @@ class ApplicationService:
         await db.commit()
         await db.refresh(application)
         return application
+
+    @staticmethod
+    async def get_candidate_name(user_id: int, db: AsyncSession) -> str:
+        stmt_prof = select(UserProfile).where(UserProfile.user_id == user_id)
+        res_prof = await db.execute(stmt_prof)
+        profile = res_prof.scalar_one_or_none()
+        if profile and profile.name and profile.name.strip():
+            return profile.name.strip()
+
+        stmt_user = select(User).where(User.id == user_id)
+        res_user = await db.execute(stmt_user)
+        user_obj = res_user.scalar_one_or_none()
+        if user_obj and user_obj.email:
+            prefix = user_obj.email.split("@")[0]
+            return prefix.capitalize()
+        return "Jobi"
+
+    @staticmethod
+    def get_formatted_attachment_name(candidate_name: str, job_title: str, file_path_or_ext: str = ".pdf") -> str:
+        safe_candidate = re.sub(r'[\\/*?:"<>|]', '', candidate_name).strip() if candidate_name else "Jobi"
+        safe_candidate = re.sub(r'\s+', ' ', safe_candidate)
+        safe_title = re.sub(r'[\\/*?:"<>|]', '-', job_title).strip() if job_title else "Position"
+        safe_title = re.sub(r'\s+', ' ', safe_title)
+
+        ext = Path(file_path_or_ext).suffix if "." in file_path_or_ext else f".{file_path_or_ext}"
+        if not ext:
+            ext = ".pdf"
+
+        return f"{safe_candidate}_({safe_title}){ext}"
 
     @staticmethod
     async def send_application(
@@ -352,8 +383,21 @@ class ApplicationService:
 
         # Extract Cover Letter content
         cover_letter_text = application.cover_letter.content if application.cover_letter else "Dear Hiring Manager,\nPlease find attached my resume for your consideration.\n\nBest regards."
+        
+        # Determine candidate name and formatted attachment filename
+        candidate_name = await ApplicationService.get_candidate_name(user_id, db)
+        job_title = application.job.title if application.job and application.job.title else "Job"
+        
         resume_path = application.resume.file_path if application.resume else None
-        subject = application.email_subject or f"Application for {application.job.title}"
+        attachment_filename = None
+        if resume_path:
+            attachment_filename = ApplicationService.get_formatted_attachment_name(
+                candidate_name=candidate_name,
+                job_title=job_title,
+                file_path_or_ext=resume_path
+            )
+
+        subject = application.email_subject or f"Application for {job_title} - {candidate_name}"
 
         # Send via EmailService
         success, msg = await EmailService.send_application_email(
@@ -361,7 +405,8 @@ class ApplicationService:
             to_email=recipient_email,
             subject=subject,
             cover_letter_text=cover_letter_text,
-            resume_path=resume_path
+            resume_path=resume_path,
+            attachment_filename=attachment_filename
         )
 
         if success:

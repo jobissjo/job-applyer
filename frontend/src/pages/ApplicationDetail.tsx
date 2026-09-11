@@ -193,6 +193,14 @@ export const ApplicationDetail: React.FC = () => {
                   </option>
                 ))}
               </select>
+              {selectedResumeId && application?.job?.title && (
+                <div style={{ marginTop: '8px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                  Email attachment dispatch filename:{' '}
+                  <span style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>
+                    {`Jobi_(${application.job.title}).pdf`}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

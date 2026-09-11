@@ -54,3 +54,28 @@ async def test_hr_contact_safety_flow(client, user_a, sample_job_no_hr):
     preview_after_data = preview_after.json()
     assert preview_after_data["has_hr_contact"] is True
     assert preview_after_data["recipient_email"] == "jane.recruiter@company.com"
+
+
+@pytest.mark.asyncio
+async def test_delete_job_endpoint(client, user_a, sample_job_no_hr):
+    # 1. Delete job
+    del_resp = await client.delete(
+        f"/api/jobs/{sample_job_no_hr.id}",
+        headers=user_a["headers"]
+    )
+    assert del_resp.status_code == 204
+
+    # 2. Verify job is gone
+    get_resp = await client.get(
+        f"/api/jobs/{sample_job_no_hr.id}",
+        headers=user_a["headers"]
+    )
+    assert get_resp.status_code == 404
+
+    # 3. Deleting non-existent job returns 404
+    del_again = await client.delete(
+        f"/api/jobs/{sample_job_no_hr.id}",
+        headers=user_a["headers"]
+    )
+    assert del_again.status_code == 404
+

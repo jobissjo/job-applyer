@@ -114,7 +114,7 @@ class ResumeService:
             .order_by(Resume.created_at.desc())
         )
         result = await db.execute(stmt)
-        matched_resume = result.scalar_one_or_none()
+        matched_resume = result.scalars().first()
 
         if not matched_resume:
             # Fallback to the user's latest active resume
@@ -124,7 +124,7 @@ class ResumeService:
                 .order_by(Resume.created_at.desc())
             )
             res_latest = await db.execute(stmt_latest)
-            matched_resume = res_latest.scalar_one_or_none()
+            matched_resume = res_latest.scalars().first()
 
         return matched_resume
 

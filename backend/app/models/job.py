@@ -30,5 +30,9 @@ class Job(Base, TimestampMixin):
     )
     raw_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    applications: Mapped[List["Application"]] = relationship("Application", back_populates="job")
-    hr_contacts: Mapped[List["HRContact"]] = relationship("HRContact", back_populates="job")
+    applications: Mapped[List["Application"]] = relationship(
+        "Application", back_populates="job", cascade="all, delete-orphan"
+    )
+    hr_contacts: Mapped[List["HRContact"]] = relationship(
+        "HRContact", back_populates="job", cascade="all, delete-orphan"
+    )

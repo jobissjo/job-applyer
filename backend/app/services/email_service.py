@@ -35,6 +35,7 @@ class EmailService:
         subject: str,
         cover_letter_text: str,
         resume_path: Optional[str] = None,
+        attachment_filename: Optional[str] = None,
     ) -> tuple[bool, str]:
         if not to_email:
             return False, "Recipient email is missing."
@@ -53,17 +54,17 @@ class EmailService:
                 file_p = Path(resume_path)
                 with open(file_p, "rb") as f:
                     file_data = f.read()
-                    file_name = file_p.name
+                    file_name = attachment_filename or file_p.name
 
                 maintype = "application"
-                subtype = "pdf" if file_name.endswith(".pdf") else "octet-stream"
+                subtype = "pdf" if file_name.lower().endswith(".pdf") else "octet-stream"
                 message.add_attachment(
                     file_data,
                     maintype=maintype,
                     subtype=subtype,
                     filename=file_name
                 )
-                logger.info(f"Attached resume {file_name} ({len(file_data)} bytes) to email.")
+                logger.info(f"Attached resume as '{file_name}' ({len(file_data)} bytes) to email.")
 
             smtp_client = aiosmtplib.SMTP(
                 hostname=settings.smtp_host,

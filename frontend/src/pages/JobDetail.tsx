@@ -417,7 +417,11 @@ export const JobDetail: React.FC = () => {
               </div>
               <div style={{ fontSize: '0.88rem' }}>
                 <strong style={{ color: 'var(--text-muted)' }}>Attached Resume:</strong>{' '}
-                {resumes.find((r) => r.id === selectedResumeId)?.file_name || 'None selected'}
+                <span style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>
+                  {selectedResumeId && job?.title
+                    ? `Jobi_(${job.title}).pdf`
+                    : (resumes.find((r) => r.id === selectedResumeId)?.file_name || 'None selected')}
+                </span>
               </div>
             </div>
 

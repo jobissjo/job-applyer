@@ -95,7 +95,7 @@ class AutoApplyService:
         for sj in scraped_jobs:
             stmt_job = select(Job).where(Job.source == sj.source, Job.source_job_id == sj.source_job_id)
             res_job = await db.execute(stmt_job)
-            db_job = res_job.scalar_one_or_none()
+            db_job = res_job.scalars().first()
             if not db_job:
                 continue
 
@@ -125,7 +125,7 @@ class AutoApplyService:
                     # Look up any active resume for user
                     stmt_res = select(Resume).where(Resume.user_id == user_id, Resume.active == True).order_by(Resume.created_at.desc())
                     r_res = await db.execute(stmt_res)
-                    resume = r_res.scalar_one_or_none()
+                    resume = r_res.scalars().first()
 
                 if not resume:
                     # Synthesize resume document automatically

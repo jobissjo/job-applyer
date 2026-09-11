@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { UserCheck, AlertTriangle, Plus, ExternalLink, ArrowRight, Trash2 } from 'lucide-react';
-import { hrContactsApi } from '../services/api';
+import { hrContactsApi, jobsApi } from '../services/api';
 import { Job, HRContact } from '../types';
 
 export const HRContacts: React.FC = () => {
@@ -10,6 +10,8 @@ export const HRContacts: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'required' | 'saved'>('required');
 
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
+  const [deletingJob, setDeletingJob] = useState(false);
   const [hrEmail, setHrEmail] = useState('');
   const [hrName, setHrName] = useState('');
   const [hrPhone, setHrPhone] = useState('');
@@ -77,6 +79,28 @@ export const HRContacts: React.FC = () => {
       fetchData();
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleConfirmDeleteJob = async () => {
+    if (!jobToDelete) return;
+    setDeletingJob(true);
+    setMessage(null);
+    try {
+      await jobsApi.delete(jobToDelete.id);
+      setMessage({
+        type: 'success',
+        text: `Job "${jobToDelete.title}" at ${jobToDelete.company} has been removed.`,
+      });
+      setJobToDelete(null);
+      fetchData();
+    } catch (err: any) {
+      setMessage({
+        type: 'error',
+        text: err.response?.data?.detail || 'Failed to delete job listing',
+      });
+    } finally {
+      setDeletingJob(false);
     }
   };
 
@@ -171,6 +195,19 @@ export const HRContacts: React.FC = () => {
                           <Link to={`/jobs/${j.id}`} className="btn btn-secondary btn-sm">
                             Open Job <ArrowRight size={14} />
                           </Link>
+                          <button
+                            onClick={() => setJobToDelete(j)}
+                            className="btn btn-danger btn-sm"
+                            title="Delete Job Listing"
+                            style={{
+                              padding: '6px 10px',
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              color: 'var(--accent-red)',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                            }}
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -310,6 +347,84 @@ export const HRContacts: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Delete Job Confirmation */}
+      {jobToDelete && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '480px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <div
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--accent-red)',
+                  flexShrink: 0,
+                }}
+              >
+                <Trash2 size={20} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>
+                  Delete Job Listing
+                </h3>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                  This action cannot be undone
+                </div>
+              </div>
+            </div>
+
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.5, marginBottom: '16px' }}>
+              Are you sure you want to permanently delete this job listing? It will be removed from your missing HR contacts queue and all associated drafts will be deleted.
+            </p>
+
+            <div
+              style={{
+                background: 'var(--bg-input)',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)',
+                marginBottom: '24px',
+              }}
+            >
+              <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                {jobToDelete.title}
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '3px' }}>
+                {jobToDelete.company} • <span className="badge badge-source">{jobToDelete.source.toUpperCase()}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setJobToDelete(null)}
+                disabled={deletingJob}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteJob}
+                disabled={deletingJob}
+                className="btn btn-danger"
+                style={{
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  color: '#fff',
+                  border: 'none',
+                }}
+              >
+                {deletingJob ? 'Deleting...' : 'Yes, Delete Job'}
+              </button>
+            </div>
           </div>
         </div>
       )}

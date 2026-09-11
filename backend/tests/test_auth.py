@@ -41,3 +41,15 @@ async def test_register_and_login(client):
         json={"email": "newuser@example.com", "password": "WrongPassword"}
     )
     assert bad_login.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_dashboard_stats_endpoint(client, user_a):
+    stats_resp = await client.get("/api/dashboard-stats", headers=user_a["headers"])
+    assert stats_resp.status_code == 200
+    stats = stats_resp.json()
+    assert "total_jobs" in stats
+    assert "applications_ready" in stats
+    assert "applications_sent" in stats
+    assert "hr_contacts_required" in stats
+

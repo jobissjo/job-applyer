@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -208,17 +208,27 @@ async def preview_application(
     elif app.status == "sent":
         reason = "This application has already been dispatched."
 
+    candidate_name = await ApplicationService.get_candidate_name(current_user.id, db)
+    job_title = app.job.title if app.job else "Target Job"
+    formatted_resume_name = None
+    if app.resume:
+        formatted_resume_name = ApplicationService.get_formatted_attachment_name(
+            candidate_name=candidate_name,
+            job_title=job_title,
+            file_path_or_ext=app.resume.file_path or app.resume.file_name or ".pdf"
+        )
+
     return ApplicationPreviewResponse(
         application_id=app.id,
         job_id=app.job_id,
-        job_title=app.job.title if app.job else "Target Job",
+        job_title=job_title,
         company=app.job.company if app.job else "Target Company",
         recipient_email=recipient_email,
         has_hr_contact=has_hr,
-        email_subject=app.email_subject or (f"Application for {app.job.title}" if app.job else ""),
+        email_subject=app.email_subject or (f"Application for {job_title} - {candidate_name}" if app.job else ""),
         cover_letter_text=app.cover_letter.content if app.cover_letter else "",
         resume_title=app.resume.title if app.resume else None,
-        resume_file_name=app.resume.file_name if app.resume else None,
+        resume_file_name=formatted_resume_name or (app.resume.file_name if app.resume else None),
         can_send=can_send,
         reason_cannot_send=reason
     )

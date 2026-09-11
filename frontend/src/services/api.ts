@@ -153,6 +153,9 @@ export const jobsApi = {
     });
     return res.data;
   },
+  delete: async (id: number) => {
+    await api.delete(`/jobs/${id}`);
+  },
 };
 
 export const llmApi = {

@@ -204,3 +204,19 @@ async def generate_cover_letter(
         db=db
     )
     return cl
+
+
+@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_job(
+    job_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    job = await db.get(Job, job_id)
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+
+    await db.delete(job)
+    await db.commit()
+    return None
+
