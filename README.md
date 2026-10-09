@@ -12,6 +12,7 @@ The light workspace groups navigation into Workspace, Your toolkit, and Settings
 
 - **Manual application:** Find jobs → open an opportunity → analyze your fit → choose a resume and prepare a cover letter → review application → send. Sending saves the latest message and attachment selection first.
 - **Auto Apply:** Choose a source and search keyword, acknowledge that the run can send emails and create a resume from your profile, and start the run. The results show each application's actual status.
+- **Follow-ups:** Sent applications have a Follow up action in the list and detail page. Review and edit the suggested message, optionally reattach the resume, and send it to the original recruiter. Sent and failed attempts are stored separately from the original application.
 - **Application tracking:** Filter by ready, sent, contact needed, draft, or failed. Dashboard links open the corresponding filter directly.
 
 Frontend development uses port 8080 by default. If that port is occupied, Vite chooses another port; configure the backend's FRONTEND_URL to allow that origin.

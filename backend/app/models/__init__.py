@@ -9,6 +9,7 @@ from app.models.llm import LLMProvider, LLMUsageLog
 from app.models.hr_contact import HRContact
 from app.models.cover_letter import CoverLetter
 from app.models.application import Application
+from app.models.follow_up import ApplicationFollowUp
 from app.models.email_settings import EmailSettings
 
 __all__ = [
@@ -25,5 +26,6 @@ __all__ = [
     "HRContact",
     "CoverLetter",
     "Application",
+    "ApplicationFollowUp",
     "EmailSettings",
 ]

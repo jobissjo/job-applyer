@@ -219,3 +219,15 @@ tr:hover td { background: #fafcfb; }
 @media (max-width: 480px) { .contact-form { flex-direction: column; } .page-body > div > div[style*="display: flex"] { flex-wrap: wrap; } .card > form[style*="display: flex"] { flex-wrap: wrap; } .card > form[style*="display: flex"] > div { min-width: 180px; } }
 
 @media (max-width: 768px) { .sidebar { visibility: hidden; } .sidebar.is-open { visibility: visible; } }
+
+.follow-up-section { margin-top: 32px; padding-top: 30px; border-top: 1px solid var(--border-color); scroll-margin-top: 24px; }
+.follow-up-heading { font-size: 23px !important; font-weight: 600; margin-top: 7px; }
+.follow-up-attachment { display: flex; gap: 10px; align-items: flex-start; margin: 20px 0; color: var(--text-main); font-size: 12px; cursor: pointer; }
+.follow-up-attachment input { accent-color: var(--primary); margin-top: 4px; }
+.follow-up-history-item { padding: 16px 0; border-bottom: 1px solid var(--border-color); }
+.follow-up-history-item:last-child { border: 0; }
+.follow-up-history-item summary { cursor: pointer; display: flex; gap: 8px; align-items: flex-start; }
+.follow-up-history-item summary::before { content: '+'; color: var(--text-sub); font-size: 16px; padding-top: 1px; }
+.follow-up-history-item[open] summary::before { content: '−'; }
+.follow-up-history-item strong { display: block; font-size: 12px; margin: 8px 0 4px; overflow-wrap: anywhere; }
+.follow-up-history-body > p:not(.table-company) { white-space: pre-wrap; font-size: 12px; color: var(--text-muted); line-height: 1.8; margin: 15px 0; overflow-wrap: anywhere; }

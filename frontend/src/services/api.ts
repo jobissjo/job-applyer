@@ -11,6 +11,7 @@ import {
   HRContact,
   CoverLetter,
   Application,
+  ApplicationFollowUp,
   ApplicationPreview,
   EmailSettings,
   DashboardStats,
@@ -268,6 +269,17 @@ export const autoApplyApi = {
         message: string;
       }>;
     }>('/auto-apply', data);
+    return res.data;
+  },
+};
+
+export const followUpsApi = {
+  list: async (applicationId: number) => {
+    const res = await api.get<ApplicationFollowUp[]>('/applications/' + applicationId + '/follow-ups');
+    return res.data;
+  },
+  send: async (applicationId: number, data: { request_id: string; subject: string; body: string; attach_resume: boolean }) => {
+    const res = await api.post<ApplicationFollowUp>('/applications/' + applicationId + '/follow-ups', data);
     return res.data;
   },
 };

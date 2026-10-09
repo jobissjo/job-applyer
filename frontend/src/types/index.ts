@@ -185,3 +185,16 @@ export interface DashboardStats {
   total_hr_contacts_added: number;
   total_applications: number;
 }
+
+export interface ApplicationFollowUp {
+  id: number;
+  application_id: number;
+  recipient: string;
+  subject: string;
+  body: string;
+  attach_resume: boolean;
+  status: 'sending' | 'sent' | 'failed';
+  sent_at?: string;
+  error_message?: string;
+  created_at: string;
+}
