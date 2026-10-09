@@ -82,11 +82,18 @@ async def create_or_prepare_application(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    cover_letter_id = payload.cover_letter_id
+    if payload.cover_letter_content is not None:
+        letter = await ApplicationService.save_reviewed_cover_letter(
+            current_user.id, payload.job_id, payload.cover_letter_content,
+            payload.resume_id, db
+        )
+        cover_letter_id = letter.id
     app = await ApplicationService.prepare_or_update_application(
         user_id=current_user.id,
         job_id=payload.job_id,
         resume_id=payload.resume_id,
-        cover_letter_id=payload.cover_letter_id,
+        cover_letter_id=cover_letter_id,
         hr_contact_id=payload.hr_contact_id,
         email_subject=payload.email_subject,
         notes=payload.notes,
@@ -110,6 +117,7 @@ async def get_application_by_id(
             selectinload(Application.hr_contact)
         )
         .where(Application.id == application_id, Application.user_id == current_user.id)
+        .execution_options(populate_existing=True)
     )
     res = await db.execute(stmt)
     app = res.scalar_one_or_none()
@@ -148,6 +156,7 @@ async def update_application(
     stmt = (
         select(Application)
         .where(Application.id == application_id, Application.user_id == current_user.id)
+        .execution_options(populate_existing=True)
     )
     res = await db.execute(stmt)
     app = res.scalar_one_or_none()
@@ -155,7 +164,11 @@ async def update_application(
     if not app:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
 
-    if payload.resume_id is not None:
+    if "resume_id" in payload.model_fields_set:
+        if payload.resume_id is not None:
+            resume = await db.get(Resume, payload.resume_id)
+            if not resume or resume.user_id != current_user.id:
+                raise HTTPException(status_code=404, detail="Resume not found")
         app.resume_id = payload.resume_id
     if payload.cover_letter_id is not None:
         app.cover_letter_id = payload.cover_letter_id
@@ -167,6 +180,12 @@ async def update_application(
         app.status = payload.status
     if payload.notes is not None:
         app.notes = payload.notes
+    if payload.cover_letter_content is not None:
+        letter = await ApplicationService.save_reviewed_cover_letter(
+            current_user.id, app.job_id, payload.cover_letter_content,
+            app.resume_id, db
+        )
+        app.cover_letter_id = letter.id
 
     await db.commit()
     return await get_application_by_id(application_id, current_user, db)
@@ -187,6 +206,7 @@ async def preview_application(
             selectinload(Application.hr_contact)
         )
         .where(Application.id == application_id, Application.user_id == current_user.id)
+        .execution_options(populate_existing=True)
     )
     res = await db.execute(stmt)
     app = res.scalar_one_or_none()

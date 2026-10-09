@@ -1,10 +1,20 @@
-# Local Job Auto-Apply System
+# JobApply — Your next chapter
 
 A local-only, developer-friendly job discovery and application assistant built with **FastAPI**, **React + TypeScript**, **Async SQLite + SQLAlchemy 2.0 (`Mapped` / `mapped_column`)**, **Alembic**, and multi-provider **LLM Failover** (OpenRouter, Groq, Gemini).
 
 Designed strictly for personal use on your local workstation. No Docker required, no microservices, no cloud vendor lock-in, and zero unsolicited automated email spam.
 
 ---
+
+## Interface & workflows
+
+The light workspace groups navigation into Workspace, Your toolkit, and Settings. The overview shows actual saved setup progress, recent applications, and the next actions to take. Navigation is available on mobile through the menu button.
+
+- **Manual application:** Find jobs → open an opportunity → analyze your fit → choose a resume and prepare a cover letter → review application → send. Sending saves the latest message and attachment selection first.
+- **Auto Apply:** Choose a source and search keyword, acknowledge that the run can send emails and create a resume from your profile, and start the run. The results show each application's actual status.
+- **Application tracking:** Filter by ready, sent, contact needed, draft, or failed. Dashboard links open the corresponding filter directly.
+
+Frontend development uses port 8080 by default. If that port is occupied, Vite chooses another port; configure the backend's FRONTEND_URL to allow that origin.
 
 ## 🎯 Key Features
 
@@ -29,10 +39,10 @@ Designed strictly for personal use on your local workstation. No Docker required
    - Masked API key previews (`sk-...abcd`) ensuring keys are never exposed in GET responses.
    - In-app "Test API" button to test provider endpoints instantly.
 
-5. **Safety-First HR Contact Verification (No Unsolicited Auto-Send)**:
+5. **Recruiter Contacts & Application Workflows**:
    - **Crucial Rule**: If a job listing lacks a verified HR/recruiter email, sending is completely prevented and flagged as **HR Contact Required**.
    - Dedicated **HR Contacts Required** page allows users to manually supply recruiter contacts to unlock applications.
-   - Every application requires explicit human review and clicking **"Send Application"**.
+   - Manual applications use a dedicated review screen. Auto Apply can send emails automatically after you acknowledge its behavior and start a run.
 
 6. **Async SMTP Email Dispatch**:
    - Send tailored cover letters with your selected resume attached (PDF/DOCX) using your configured SMTP settings (e.g. Gmail App Password, Outlook, or local SMTP).
@@ -71,7 +81,7 @@ JobApplyer/
 │   │   ├── layouts/                 # MainLayout with sidebar & header
 │   │   ├── services/api.ts          # Typed Axios client with auth interceptors
 │   │   ├── types/index.ts           # TypeScript interfaces
-│   │   └── index.css                # Dark-mode dashboard design system
+│   │   └── index.css                # Light dashboard design system
 │   ├── package.json
 │   └── vite.config.ts
 ```
@@ -117,7 +127,7 @@ JobApplyer/
 
 5. (Optional) Run automated tests to verify your setup:
    ```bash
-   pytest -v
+   pytest tests -v
    ```
 
 6. Start the FastAPI development server:
@@ -164,7 +174,7 @@ python scripts/run_scrapers.py --query python --limit 20
 
 3. Open your browser and navigate to:
    ```text
-   http://localhost:5173
+   http://localhost:8080
    ```
 
 ---
@@ -172,7 +182,7 @@ python scripts/run_scrapers.py --query python --limit 20
 ## 📖 End-to-End User Walkthrough
 
 1. **Register & Login**:
-   - Go to `http://localhost:5173/register` and create your local user account.
+   - Go to `http://localhost:8080/register` and create your local user account.
 
 2. **Configure Candidate Profile (`/profile`)**:
    - Fill in your Name, Current Company, Location, Current CTC, Expected CTC, Years of Experience, and Notice Period.
@@ -221,7 +231,7 @@ The backend includes a comprehensive test suite covering:
 To run tests:
 ```bash
 cd backend
-pytest -v
+pytest tests -v
 ```
 
 ---
@@ -229,4 +239,4 @@ pytest -v
 ## 🛡️ Privacy & Security Notes
 - All data, resumes, database tables, and settings reside strictly on your local disk.
 - API keys and SMTP passwords are never exposed in GET responses (previews are masked).
-- Emails are **never** sent automatically without explicit user confirmation.
+- Manual applications are saved, reviewed, and then sent by the user. Auto Apply can send emails automatically when the user starts a run after acknowledging that behavior.

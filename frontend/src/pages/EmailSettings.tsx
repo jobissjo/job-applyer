@@ -30,7 +30,7 @@ export const EmailSettings: React.FC = () => {
           setIsConfigured(data.password_configured);
         }
       })
-      .catch((err) => console.error(err));
+      .catch(() => setAlert({ type: 'error', text: 'Could not load your email connection. Please try again.' }));
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -38,7 +38,7 @@ export const EmailSettings: React.FC = () => {
     setSaving(true);
     setAlert(null);
     try {
-      await emailApi.updateSettings({
+      const saved = await emailApi.updateSettings({
         smtp_host: smtpHost.trim(),
         smtp_port: smtpPort,
         smtp_username: smtpUsername.trim(),
@@ -46,7 +46,7 @@ export const EmailSettings: React.FC = () => {
         from_email: fromEmail.trim(),
         use_tls: useTls,
       });
-      setIsConfigured(true);
+      setIsConfigured(saved.password_configured);
       setAlert({ type: 'success', text: 'SMTP configuration saved successfully!' });
       setSmtpPassword('');
     } catch (err: any) {
@@ -78,12 +78,7 @@ export const EmailSettings: React.FC = () => {
   return (
     <div>
       <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '4px' }}>
-          SMTP Email Configuration
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-          Configure outgoing email settings for sending applications and attached resumes. Works with Gmail SMTP (App Passwords), Outlook, or local SMTP servers.
-        </p>
+        <div className="page-intro"><span className="eyebrow">Workspace settings</span><h1>Connect your email.</h1><p>Set up and test the email account you will use to send applications.</p></div>
       </div>
 
       {alert && (

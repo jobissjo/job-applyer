@@ -11,6 +11,7 @@ class ApplicationCreate(BaseModel):
     job_id: int
     resume_id: Optional[int] = None
     cover_letter_id: Optional[int] = None
+    cover_letter_content: Optional[str] = None
     hr_contact_id: Optional[int] = None
     email_subject: Optional[str] = None
     notes: Optional[str] = None
@@ -19,6 +20,7 @@ class ApplicationCreate(BaseModel):
 class ApplicationUpdate(BaseModel):
     resume_id: Optional[int] = None
     cover_letter_id: Optional[int] = None
+    cover_letter_content: Optional[str] = None
     hr_contact_id: Optional[int] = None
     email_subject: Optional[str] = None
     status: Optional[str] = None

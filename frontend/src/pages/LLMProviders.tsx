@@ -22,7 +22,7 @@ export const LLMProviders: React.FC = () => {
       const data = await llmApi.list();
       setProviders(data);
     } catch (err) {
-      console.error(err);
+      setError('Could not load or update your AI providers. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -74,7 +74,7 @@ export const LLMProviders: React.FC = () => {
       await llmApi.delete(id);
       fetchProviders();
     } catch (err) {
-      console.error(err);
+      setError('Could not load or update your AI providers. Please try again.');
     }
   };
 
@@ -110,12 +110,7 @@ export const LLMProviders: React.FC = () => {
   return (
     <div>
       <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '4px' }}>
-          LLM Providers & Failover
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-          Configure OpenRouter, Groq, and Gemini. Providers are queried by Priority (1 = primary). If a provider hits a rate limit (429) or quota limit, the system automatically fails over to the next provider.
-        </p>
+        <div className="page-intro"><span className="eyebrow">Workspace settings</span><h1>A little help from AI.</h1><p>Connect a provider for job matching and cover letters. Add a backup for when your first choice is unavailable.</p></div>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
@@ -123,7 +118,7 @@ export const LLMProviders: React.FC = () => {
 
       {/* Add New Provider Card */}
       <div className="card" style={{ marginBottom: '32px' }}>
-        <div className="card-title">Add LLM Configuration</div>
+        <div className="card-title">Add AI provider</div>
         <div className="card-subtitle">
           API keys are stored locally and never returned unmasked in API responses.
         </div>
@@ -182,7 +177,7 @@ export const LLMProviders: React.FC = () => {
           </div>
 
           <button type="submit" className="btn btn-primary">
-            <Plus size={16} /> Save LLM Provider
+            <Plus size={16} /> Save provider
           </button>
         </form>
       </div>
@@ -193,7 +188,7 @@ export const LLMProviders: React.FC = () => {
           Configured Providers ({providers.length})
         </div>
 
-        {providers.length === 0 ? (
+        {loading ? <div className="loading-state" role="status">Loading providers…</div> : providers.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
             <Cpu size={32} style={{ margin: '0 auto 12px auto', opacity: 0.5 }} />
             <p>No LLM providers configured yet. Add at least one provider to enable matching and cover letter generation.</p>
@@ -231,7 +226,7 @@ export const LLMProviders: React.FC = () => {
                       <code>{p.api_key_preview || 'Configured'}</code>
                     </td>
                     <td>
-                      <span className="badge badge-matched">Active</span>
+                      <span className={`badge ${p.active && p.enabled ? "badge-matched" : "badge-source"}`}>{p.active && p.enabled ? "Active" : "Inactive"}</span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>

@@ -1,132 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Send, AlertTriangle, ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react';
-import { applicationsApi } from '../services/api';
-import { Application } from '../types';
-
+import { Link, useSearchParams } from 'react-router-dom';
+import { AlertCircle, ArrowRight, ArrowUpRight, Search, Send } from 'lucide-react';
+import { applicationsApi, formatApiError } from '../services/api';
+import { StatusBadge } from '../components/StatusBadge';
+import type { Application } from '../types';
+const filters = [{ value: '', label: 'All applications' }, { value: 'ready', label: 'Ready to send' }, { value: 'sent', label: 'Sent' }, { value: 'hr_contact_required', label: 'Contact needed' }, { value: 'draft', label: 'Drafts' }, { value: 'failed', label: 'Failed' }];
 export const Applications: React.FC = () => {
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [filterStatus, setFilterStatus] = useState<string>('');
-  const [loading, setLoading] = useState(true);
-
-  const fetchApplications = async () => {
-    setLoading(true);
-    try {
-      const data = await applicationsApi.list(filterStatus || undefined);
-      setApplications(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const [params,setParams] = useSearchParams();
+  const status = filters.some(f=>f.value===params.get('status')) ? params.get('status') || '' : '';
+  const [applications,setApplications] = useState<Application[]>([]);
+  const [loading,setLoading] = useState(true);
+  const [error,setError] = useState('');
+  const [retry,setRetry] = useState(0);
   useEffect(() => {
-    fetchApplications();
-  }, [filterStatus]);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'sent':
-        return <span className="badge badge-sent"><CheckCircle2 size={12} /> Sent</span>;
-      case 'ready':
-        return <span className="badge badge-ready"><CheckCircle2 size={12} /> Ready to Send</span>;
-      case 'hr_contact_required':
-        return <span className="badge badge-hr_contact_required"><AlertTriangle size={12} /> HR Required</span>;
-      case 'failed':
-        return <span className="badge badge-failed"><XCircle size={12} /> Failed</span>;
-      default:
-        return <span className="badge badge-new"><Clock size={12} /> {status}</span>;
-    }
-  };
-
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '4px' }}>
-            Application History
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-            Track every job application from draft to final email dispatch.
-          </p>
-        </div>
-
-        {/* Status Filter */}
-        <div style={{ width: '200px' }}>
-          <select
-            className="form-select"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
-            <option value="">All Statuses</option>
-            <option value="ready">Ready to Send</option>
-            <option value="sent">Sent</option>
-            <option value="hr_contact_required">HR Contact Required</option>
-            <option value="failed">Failed</option>
-            <option value="draft">Draft</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="card">
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-            Loading applications...
-          </div>
-        ) : applications.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
-            <Send size={32} style={{ margin: '0 auto 12px auto', opacity: 0.5 }} />
-            <p>No applications found.</p>
-            <Link to="/jobs" className="btn btn-primary btn-sm" style={{ marginTop: '16px' }}>
-              Discover Jobs to Apply
-            </Link>
-          </div>
-        ) : (
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Job Title</th>
-                  <th>Company</th>
-                  <th>Resume</th>
-                  <th>HR Recruiter Email</th>
-                  <th>Status</th>
-                  <th>Applied / Sent Date</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {applications.map((app) => (
-                  <tr key={app.id}>
-                    <td style={{ fontWeight: 600 }}>{app.job?.title || 'Job'}</td>
-                    <td>{app.job?.company || 'Company'}</td>
-                    <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                      {app.resume?.title || 'No resume selected'}
-                    </td>
-                    <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                      {app.sent_to || app.hr_contact?.email || app.job?.contact_email || (
-                        <span style={{ color: 'var(--accent-amber)' }}>Missing HR Email</span>
-                      )}
-                    </td>
-                    <td>{getStatusBadge(app.status)}</td>
-                    <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                      {app.sent_at
-                        ? new Date(app.sent_at).toLocaleDateString()
-                        : new Date(app.created_at).toLocaleDateString()}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <Link to={`/applications/${app.id}`} className="btn btn-secondary btn-sm">
-                        Review & Send <ArrowRight size={14} />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    let active=true; setLoading(true); setError('');
+    applicationsApi.list(status || undefined).then(data=>{if(active)setApplications(data);})
+      .catch(err=>{if(active)setError(formatApiError(err,'Could not load applications.'));})
+      .finally(()=>{if(active)setLoading(false);});
+    return ()=>{active=false;};
+  },[status,retry]);
+  return <div><div className="page-heading"><div><span className="eyebrow">Every step counts</span><h1>Your applications</h1><p>Prepare, review, and follow the progress of every opportunity.</p></div><Link to="/jobs" className="btn btn-primary"><Search size={15} /> Find your next role</Link></div>
+    <div className="filter-tabs" aria-label="Filter applications">{filters.map(filter=><button key={filter.value} className={'filter-tab'+(status===filter.value?' active':'')} aria-pressed={status===filter.value} onClick={()=>setParams(filter.value?{status:filter.value}:{})}>{filter.label}</button>)}</div>
+    {error && <div className="alert alert-danger" role="alert"><AlertCircle size={16} /><span>{error}</span><button className="btn btn-secondary btn-sm" onClick={()=>setRetry(n=>n+1)}>Retry</button></div>}
+    <section className="card"><div className="section-header"><div><h2>{filters.find(f=>f.value===status)?.label}</h2><p>{loading?'Loading your activity…':error?'Activity unavailable':applications.length+' applications'}</p></div></div>
+    {loading?<div className="loading-state" role="status">Loading applications…</div>:error?null:applications.length===0?<div className="empty-state"><span className="empty-state-icon"><Send size={23} /></span><h3>{status?'Nothing here yet':'Your next application starts with a good fit'}</h3><p>{status?'Applications with this status will appear here.':'Explore a role, choose your resume, and prepare your introduction.'}</p><Link to="/jobs" className="btn btn-secondary">Explore opportunities <ArrowRight size={14} /></Link></div>:<div className="table-container"><table><thead><tr><th>Opportunity</th><th>Resume</th><th>Recruiter</th><th>Status</th><th>Updated</th><th><span className="sr-only">Review</span></th></tr></thead><tbody>{applications.map(app=><tr key={app.id}><td><Link className="table-job" to={'/applications/'+app.id}>{app.job?.title || 'Application #'+app.id}</Link><span className="table-company">{app.job?.company || 'Company unavailable'}</span></td><td>{app.resume?.title || 'No resume selected'}</td><td>{app.sent_to || app.hr_contact?.email || app.job?.contact_email || <span style={{color:'var(--accent-amber)'}}>Contact needed</span>}</td><td><StatusBadge status={app.status} /></td><td>{new Date(app.sent_at || app.updated_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</td><td><Link to={'/applications/'+app.id} className="btn btn-secondary btn-sm">{app.status==='sent'?'View':'Review'}<ArrowUpRight size={13} /></Link></td></tr>)}</tbody></table></div>}</section>
+  </div>;
 };

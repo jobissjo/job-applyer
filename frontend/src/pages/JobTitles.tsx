@@ -16,7 +16,7 @@ export const JobTitles: React.FC = () => {
       const data = await jobTitlesApi.list();
       setTitles(data);
     } catch (err) {
-      console.error(err);
+      setError('Could not load or update your target roles. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -44,7 +44,7 @@ export const JobTitles: React.FC = () => {
       await jobTitlesApi.update(title.id, { active: !title.active });
       fetchTitles();
     } catch (err) {
-      console.error(err);
+      setError('Could not load or update your target roles. Please try again.');
     }
   };
 
@@ -60,7 +60,7 @@ export const JobTitles: React.FC = () => {
       setEditingId(null);
       fetchTitles();
     } catch (err) {
-      console.error(err);
+      setError('Could not load or update your target roles. Please try again.');
     }
   };
 
@@ -70,19 +70,14 @@ export const JobTitles: React.FC = () => {
       await jobTitlesApi.delete(id);
       fetchTitles();
     } catch (err) {
-      console.error(err);
+      setError('Could not load or update your target roles. Please try again.');
     }
   };
 
   return (
     <div>
       <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '4px' }}>
-          Job Title Preferences
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-          Configure your desired roles (e.g., Python Developer, FastAPI Engineer). The LLM job matcher strictly matches scraped jobs to these titles.
-        </p>
+        <div className="page-intro"><span className="eyebrow">Your search preferences</span><h1>What comes next?</h1><p>Choose the roles you want to pursue. Use these to guide your job matches.</p></div>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
@@ -100,7 +95,7 @@ export const JobTitles: React.FC = () => {
             />
           </div>
           <button type="submit" className="btn btn-primary">
-            <Plus size={16} /> Add Desired Title
+            <Plus size={16} /> Add target role
           </button>
         </form>
       </div>

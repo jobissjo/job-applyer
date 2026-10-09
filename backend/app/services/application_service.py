@@ -27,6 +27,33 @@ from app.utils.logger import logger
 
 
 class ApplicationService:
+
+    @staticmethod
+    async def save_reviewed_cover_letter(
+        user_id: int,
+        job_id: int,
+        content: str,
+        resume_id: Optional[int],
+        db: AsyncSession
+    ) -> CoverLetter:
+        job = await db.get(Job, job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        if resume_id is not None:
+            resume = await db.get(Resume, resume_id)
+            if not resume or resume.user_id != user_id:
+                raise HTTPException(status_code=404, detail="Resume not found")
+        letter = CoverLetter(
+            user_id=user_id,
+            job_id=job_id,
+            job_title=job.title,
+            resume_id=resume_id,
+            content=content
+        )
+        db.add(letter)
+        await db.flush()
+        return letter
+
     @staticmethod
     async def analyze_job(user_id: int, job_id: int, db: AsyncSession) -> JobAnalyzeResponse:
         # 1. Fetch Job

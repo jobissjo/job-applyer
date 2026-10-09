@@ -107,12 +107,7 @@ export const HRContacts: React.FC = () => {
   return (
     <div>
       <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '4px' }}>
-          HR Contacts Required
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-          Jobs without a verified HR or recruiter email cannot be automatically sent. Add an HR email here to unlock application preparation.
-        </p>
+        <div className="page-intro"><span className="eyebrow">Keep your applications moving</span><h1>Recruiter contacts</h1><p>Add missing recruiter emails and keep your saved contacts in one place.</p></div>
       </div>
 
       {message && (
@@ -222,7 +217,7 @@ export const HRContacts: React.FC = () => {
       {/* Tab: Saved Contacts */}
       {activeTab === 'saved' && (
         <div className="card">
-          <div className="card-title">Saved HR Contacts Directory</div>
+          <div className="card-title">Saved recruiter contacts</div>
           <div className="card-subtitle">
             Recruiter and HR email addresses linked to specific job opportunities.
           </div>
@@ -417,7 +412,7 @@ export const HRContacts: React.FC = () => {
                 disabled={deletingJob}
                 className="btn btn-danger"
                 style={{
-                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  background: 'var(--accent-rose)',
                   color: '#fff',
                   border: 'none',
                 }}

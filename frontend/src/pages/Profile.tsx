@@ -28,7 +28,7 @@ export const Profile: React.FC = () => {
       .then((data) => {
         if (data) setProfile(data);
       })
-      .catch((err) => console.error(err));
+      .catch(() => setMessage({ type: 'error', text: 'Could not load your profile. Please try again.' }));
   }, []);
 
   const handleChange = (field: keyof UserProfile, value: any) => {
@@ -53,12 +53,7 @@ export const Profile: React.FC = () => {
   return (
     <div>
       <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '4px' }}>
-          Candidate Profile
-        </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-          Your profile information (experience, current & expected CTC, notice period) is supplied to the LLM to ground matching and create tailored application cover letters.
-        </p>
+        <div className="page-intro"><span className="eyebrow">Your toolkit</span><h1>Your story, your strengths.</h1><p>Keep your experience and contact details ready for your next application.</p></div>
       </div>
 
       {message && (

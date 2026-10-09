@@ -1,184 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, ExternalLink, ArrowRight, UserCheck, AlertCircle } from 'lucide-react';
-import { jobsApi } from '../services/api';
-import { Job } from '../types';
+import { AlertCircle, ArrowRight, Briefcase, Check, MapPin, Search, Zap } from 'lucide-react';
+import { jobsApi, formatApiError } from '../services/api';
+import { StatusBadge } from '../components/StatusBadge';
+import type { Job } from '../types';
 
 export const Jobs: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [query, setQuery] = useState('');
+  const [search, setSearch] = useState('');
   const [source, setSource] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [hasNext, setHasNext] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const fetchJobs = async () => {
-    setLoading(true);
-    try {
-      const data = await jobsApi.list({
-        query: query.trim() || undefined,
-        source: source || undefined,
-        page,
-        limit: 12,
-      });
-      setJobs(data.items);
-      setTotal(data.total);
-      setHasNext(data.has_next);
-    } catch (err) {
-      console.error('Failed to fetch jobs:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const [error, setError] = useState('');
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
-    fetchJobs();
-  }, [page, source]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    fetchJobs();
-  };
-
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '4px' }}>
-            Job Discovery
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-            Search local database of scraped opportunities from Infopark and Technopark ({total} total).
-          </p>
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="card" style={{ marginBottom: '24px', padding: '16px 20px' }}>
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
-            <input
-              type="text"
-              className="form-input"
-              placeholder="Search by title, skills, or company (e.g. Python, FastAPI, React)..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-
-          <div style={{ width: '180px' }}>
-            <select
-              className="form-select"
-              value={source}
-              onChange={(e) => {
-                setSource(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">All Sources</option>
-              <option value="infopark">Infopark (Kochi)</option>
-              <option value="technopark">Technopark (Tvm)</option>
-            </select>
-          </div>
-
-          <button type="submit" className="btn btn-primary">
-            <Search size={16} /> Search
-          </button>
-        </form>
-      </div>
-
-      {/* Job Grid */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
-          Loading jobs...
-        </div>
-      ) : jobs.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '48px' }}>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>
-            No jobs found matching your criteria.
-          </p>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-sub)' }}>
-            Run the scraper CLI scripts (<code>python scripts/run_scrapers.py</code>) to pull fresh listings.
-          </div>
-        </div>
-      ) : (
-        <div className="grid-3" style={{ marginBottom: '32px' }}>
-          {jobs.map((job) => (
-            <div key={job.id} className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <span className="badge badge-source">{job.source.toUpperCase()}</span>
-                {job.has_hr_contact ? (
-                  <span className="badge badge-ready" title="HR contact email is available">
-                    HR Contact Available
-                  </span>
-                ) : (
-                  <span className="badge badge-hr_contact_required" title="No HR email found on listing">
-                    HR Required
-                  </span>
-                )}
-              </div>
-
-              <h2 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '4px', lineHeight: 1.3 }}>
-                {job.title}
-              </h2>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500, marginBottom: '8px' }}>
-                {job.company}
-              </div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-sub)', marginBottom: '16px' }}>
-                {job.location || 'Kerala, India'}
-              </div>
-
-              <p
-                style={{
-                  fontSize: '0.86rem',
-                  color: 'var(--text-muted)',
-                  flex: 1,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  marginBottom: '20px',
-                  lineHeight: 1.5,
-                }}
-              >
-                {job.description || job.requirements || 'No description provided.'}
-              </p>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '14px', marginTop: 'auto' }}>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-sub)' }}>
-                  {job.posted_date ? `Posted: ${job.posted_date}` : 'Recently scraped'}
-                </span>
-                <Link to={`/jobs/${job.id}`} className="btn btn-secondary btn-sm">
-                  View & Apply <ArrowRight size={14} />
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Pagination Controls */}
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px' }}>
-        <button
-          className="btn btn-secondary btn-sm"
-          disabled={page <= 1}
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-        >
-          Previous
-        </button>
-        <span style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-          Page {page}
-        </span>
-        <button
-          className="btn btn-secondary btn-sm"
-          disabled={!hasNext}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Next
-        </button>
-      </div>
-    </div>
-  );
+    let active = true;
+    setLoading(true); setError('');
+    jobsApi.list({ query: search || undefined, source: source || undefined, page, limit: 12 }).then(data => {
+      if (!active) return;
+      setJobs(data.items); setTotal(data.total); setHasNext(data.has_next);
+    }).catch(err => { if (active) setError(formatApiError(err, 'Could not load jobs. Please try again.')); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [page, source, search, retry]);
+  const onSearch = (event: React.FormEvent) => { event.preventDefault(); setSearch(query.trim()); setPage(1); setRetry(n => n+1); };
+  return <div>
+    <div className="page-heading"><div><span className="eyebrow">Find your next opportunity</span><h1>A role that feels right.</h1><p>Explore opportunities from Infopark and Technopark.</p></div><Link to="/auto-apply" className="btn btn-secondary"><Zap size={15} /> Discover & auto apply</Link></div>
+    <form className="card search-toolbar" onSubmit={onSearch}><div className="search-input"><Search size={18} /><input aria-label="Search job titles, skills, or companies" className="form-input" placeholder="Job title, skill, or company…" value={query} onChange={e => setQuery(e.target.value)} /></div><select aria-label="Job source" className="form-select" value={source} onChange={e => { setSource(e.target.value); setPage(1); }}><option value="">All sources</option><option value="infopark">Infopark · Kochi</option><option value="technopark">Technopark · Trivandrum</option></select><button className="btn btn-primary" type="submit">Search jobs <ArrowRight size={14} /></button></form>
+    {error && <div className="alert alert-danger" role="alert"><AlertCircle size={17} /><span>{error}</span><button className="btn btn-secondary btn-sm" onClick={() => setRetry(n => n+1)}>Retry</button></div>}
+    <div className="results-heading"><span>{loading ? 'Finding opportunities…' : error ? 'Results unavailable' : total + (total === 1 ? ' opportunity' : ' opportunities')}{search && ' for “' + search + '”'}</span><span>Infopark & Technopark</span></div>
+    {loading ? <div className="card loading-state" role="status">Loading opportunities…</div> : error ? null : jobs.length === 0 ? <div className="card empty-state"><span className="empty-state-icon"><Briefcase size={24} /></span><h2>{search || source ? 'No matches this time' : 'Your opportunity board is ready'}</h2><p>{search || source ? 'Try another keyword or look across both sources.' : 'Discover new listings through Auto apply. That workflow can also send applications, so review its settings before starting.'}</p>{search || source ? <button className="btn btn-secondary" onClick={() => { setQuery(''); setSearch(''); setSource(''); setPage(1); }}>Clear filters</button> : <Link to="/auto-apply" className="btn btn-primary">Open Auto apply <ArrowRight size={14} /></Link>}</div> :
+      <div className="grid-3">{jobs.map(job => <article key={job.id} className="card job-card"><div className="job-card-top"><div className="company-avatar" aria-hidden="true">{job.company.split(/\s+/).slice(0,2).map(word => word.charAt(0)).join('').toUpperCase()}</div><span className="badge badge-source">{job.source === 'infopark' ? 'Infopark' : job.source === 'technopark' ? 'Technopark' : job.source}</span></div><h2><Link to={'/jobs/' + job.id}>{job.title}</Link></h2><div className="job-company">{job.company}</div><div className="job-location"><MapPin size={12} />{job.location || 'Location not listed'}</div><p className="job-description">{job.description || job.requirements || 'Open this opportunity to see the available details.'}</p><div className="job-card-footer">{job.is_applied ? <StatusBadge status={job.application_status || 'sent'} /> : job.has_hr_contact ? <span className="badge badge-matched"><Check size={11} /> Contact available</span> : <StatusBadge status="hr_contact_required" />}<Link to={'/jobs/' + job.id} className="btn btn-secondary btn-sm">View job <ArrowRight size={13} /></Link></div></article>)}</div>}
+    {!error && !loading && total > 0 && <div className="pagination"><button className="btn btn-secondary btn-sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1,p-1))}>Previous</button><span>Page {page} of {Math.max(1,Math.ceil(total/12))}</span><button className="btn btn-secondary btn-sm" disabled={!hasNext} onClick={() => setPage(p => p+1)}>Next</button></div>}
+  </div>;
 };

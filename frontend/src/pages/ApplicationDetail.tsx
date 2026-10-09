@@ -1,247 +1,55 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import {
-  Send,
-  AlertTriangle,
-  CheckCircle2,
-  FileText,
-  Mail,
-  Building,
-  Save,
-  ArrowLeft,
-  XCircle,
-} from 'lucide-react';
-import { applicationsApi, resumesApi } from '../services/api';
-import { Application, Resume } from '../types';
-
+import { Link, useParams } from 'react-router-dom';
+import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, FileText, Loader2, Save, Send } from 'lucide-react';
+import { applicationsApi, resumesApi, formatApiError } from '../services/api';
+import { StatusBadge } from '../components/StatusBadge';
+import type { Application, Resume } from '../types';
 export const ApplicationDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const appId = Number(id);
-
-  const [application, setApplication] = useState<Application | null>(null);
-  const [resumes, setResumes] = useState<Resume[]>([]);
-  const [selectedResumeId, setSelectedResumeId] = useState<number | undefined>();
-  const [subject, setSubject] = useState('');
-  const [coverLetterContent, setCoverLetterContent] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const fetchAppData = async () => {
-    try {
-      const [app, resList] = await Promise.all([
-        applicationsApi.get(appId),
-        resumesApi.list(),
-      ]);
-      setApplication(app);
-      setResumes(resList);
-      setSelectedResumeId(app.resume_id || undefined);
-      setSubject(app.email_subject || `Application for ${app.job?.title || 'Job'}`);
-      setCoverLetterContent(app.cover_letter?.content || app.notes || '');
-    } catch (err) {
-      console.error(err);
-    }
+  const {id} = useParams();
+  const appId=Number(id);
+  const [application,setApplication]=useState<Application|null>(null);
+  const [resumes,setResumes]=useState<Resume[]>([]);
+  const [resumeId,setResumeId]=useState<number|undefined>();
+  const [subject,setSubject]=useState('');
+  const [body,setBody]=useState('');
+  const [loading,setLoading]=useState(true);
+  const [busy,setBusy]=useState<'save'|'send'|null>(null);
+  const [error,setError]=useState('');
+  const [message,setMessage]=useState('');
+  const [retry,setRetry]=useState(0);
+  useEffect(()=>{
+    let active=true;setLoading(true);setError('');
+    Promise.all([applicationsApi.get(appId),resumesApi.list()]).then(([app,list])=>{
+      if(!active)return;setApplication(app);setResumes(list);setResumeId(app.resume_id || undefined);setSubject(app.email_subject||'Application for '+app.job?.title);setBody(app.cover_letter?.content||'');
+    }).catch(err=>{if(active)setError(formatApiError(err,'Could not load this application.'));})
+      .finally(()=>{if(active)setLoading(false);});
+    return ()=>{active=false;};
+  },[appId,retry]);
+  const save = () => applicationsApi.update(appId,{ resume_id:resumeId ?? null,email_subject:subject,cover_letter_content:body });
+  const saveDraft=async()=>{
+    setBusy('save');setError('');setMessage('');
+    try{setApplication(await save());setMessage('Your changes are saved.');}catch(err){setError(formatApiError(err,'Could not save your changes.'));}finally{setBusy(null);}
   };
-
-  useEffect(() => {
-    if (appId) fetchAppData();
-  }, [appId]);
-
-  const handleSave = async () => {
-    setSaving(true);
-    setMessage(null);
-    try {
-      const updated = await applicationsApi.update(appId, {
-        resume_id: selectedResumeId,
-        email_subject: subject,
-        notes: coverLetterContent,
-      });
-      setApplication(updated);
-      setMessage({ type: 'success', text: 'Application details updated successfully!' });
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to update application' });
-    } finally {
-      setSaving(false);
-    }
+  const send=async()=>{
+    setBusy('send');setError('');setMessage('');
+    try{
+      await save();
+      const app=await applicationsApi.send(appId);setApplication(app);
+      if(app.status==='sent')setMessage('Application sent to '+app.sent_to+'.');
+      else setError('Your application was not sent. '+(app.notes||'Check your email connection and try again.'));
+    }catch(err){setError(formatApiError(err,'Could not send this application.'));}finally{setBusy(null);}
   };
-
-  const handleSend = async () => {
-    if (!window.confirm('Are you sure you want to send this application email right now?')) return;
-    setSending(true);
-    setMessage(null);
-    try {
-      const updated = await applicationsApi.send(appId);
-      setApplication(updated);
-      setMessage({ type: 'success', text: `Application successfully sent to ${updated.sent_to}!` });
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.response?.data?.detail || 'Failed to send application email' });
-    } finally {
-      setSending(false);
-    }
-  };
-
-  if (!application) {
-    return <div style={{ textAlign: 'center', padding: '60px' }}>Loading application details...</div>;
-  }
-
-  const effectiveEmail =
-    application.sent_to ||
-    application.hr_contact?.email ||
-    application.job?.contact_email;
-
-  const canSend = Boolean(effectiveEmail) && application.status !== 'sent';
-
-  return (
-    <div>
-      <div style={{ marginBottom: '24px' }}>
-        <Link to="/applications" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-          <ArrowLeft size={14} /> Back to Applications
-        </Link>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
-                Application Review
-              </h1>
-              <span className={`badge badge-${application.status}`}>{application.status.toUpperCase()}</span>
-            </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-              {application.job?.title} at {application.job?.company}
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button onClick={handleSave} disabled={saving} className="btn btn-secondary">
-              <Save size={16} /> {saving ? 'Saving...' : 'Save Draft'}
-            </button>
-            <button
-              onClick={handleSend}
-              disabled={!canSend || sending}
-              className="btn btn-primary"
-              style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
-            >
-              <Send size={16} /> {sending ? 'Sending...' : 'Send Application Now'}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {message && (
-        <div className={`alert alert-${message.type === 'success' ? 'success' : 'danger'}`}>
-          {message.text}
-        </div>
-      )}
-
-      {application.status === 'sent' && (
-        <div className="alert alert-success">
-          <CheckCircle2 size={18} />
-          <div>
-            <strong>Dispatched:</strong> This application was sent to <strong>{application.sent_to}</strong> on{' '}
-            {application.sent_at ? new Date(application.sent_at).toLocaleString() : 'recently'}.
-          </div>
-        </div>
-      )}
-
-      {!effectiveEmail && (
-        <div className="alert alert-warning">
-          <AlertTriangle size={18} />
-          <div>
-            <strong>HR Contact Required:</strong> No recruiter or HR email is attached to this application. It cannot be dispatched until an HR email is provided.
-          </div>
-        </div>
-      )}
-
-      <div className="grid-2">
-        {/* Left Column: Email Configuration */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div className="card">
-            <div className="card-title">Recipient & Subject</div>
-
-            <div className="form-group">
-              <label className="form-label">To (HR / Recruiter Email)</label>
-              <input
-                type="email"
-                className="form-input"
-                readOnly
-                value={effectiveEmail || 'No HR email found'}
-                style={{ opacity: 0.8 }}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Email Subject Line</label>
-              <input
-                type="text"
-                className="form-input"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Attached Resume</label>
-              <select
-                className="form-select"
-                value={selectedResumeId || ''}
-                onChange={(e) => setSelectedResumeId(Number(e.target.value) || undefined)}
-              >
-                <option value="">-- No Resume Attached --</option>
-                {resumes.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.title} ({r.file_name})
-                  </option>
-                ))}
-              </select>
-              {selectedResumeId && application?.job?.title && (
-                <div style={{ marginTop: '8px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  Email attachment dispatch filename:{' '}
-                  <span style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>
-                    {`Jobi_(${application.job.title}).pdf`}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-title">Target Job Summary</div>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-              <div><strong>Role:</strong> {application.job?.title}</div>
-              <div><strong>Company:</strong> {application.job?.company}</div>
-              <div><strong>Location:</strong> {application.job?.location || 'Kerala'}</div>
-              <div><strong>Source:</strong> {application.job?.source.toUpperCase()}</div>
-              {application.job?.detail_url && (
-                <div style={{ marginTop: '10px' }}>
-                  <a
-                    href={application.job.detail_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '0.85rem' }}
-                  >
-                    View Original Portal Post ↗
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column: Cover Letter Body */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="card-title">Cover Letter Body (Email Message)</div>
-          <div className="card-subtitle">
-            This content will be placed directly into the outgoing email body sent via your SMTP settings.
-          </div>
-
-          <textarea
-            className="form-textarea"
-            style={{ flex: 1, minHeight: '360px', fontFamily: 'monospace', fontSize: '0.9rem', lineHeight: 1.5 }}
-            value={coverLetterContent}
-            onChange={(e) => setCoverLetterContent(e.target.value)}
-          />
-        </div>
-      </div>
-    </div>
-  );
+  if(loading)return <div className="loading-state" role="status">Loading your application…</div>;
+  if(!application)return <div className="card empty-state"><h1>Application unavailable</h1><p>{error}</p><button className="btn btn-secondary" onClick={()=>setRetry(n=>n+1)}>Try again</button><Link className="text-link" to="/applications" style={{marginLeft:16}}>Back to applications</Link></div>;
+  const sent=application.status==='sent';
+  const recipient=application.sent_to || application.hr_contact?.email || application.job?.contact_email;
+  const canSend=!!recipient && !sent && !!subject.trim() && !!body.trim();
+  const dirty=subject!==(application.email_subject||'') || body!==(application.cover_letter?.content||'') || (resumeId || null)!==(application.resume_id || null);
+  return <div><Link to="/applications" className="text-link" style={{marginBottom:18}}><ArrowLeft size={14} /> All applications</Link><div className="page-heading"><div><span className="eyebrow">Make a thoughtful introduction</span><h1>{sent?'Your sent application':'Review your application'}</h1><p>{application.job?.title} · {application.job?.company}</p></div><StatusBadge status={application.status} /></div>
+    {error&&<div className="alert alert-danger" role="alert"><AlertCircle size={16}/>{error}</div>}{message&&<div className="alert alert-success" role="status"><CheckCircle2 size={16}/>{message}</div>}
+    {sent&&<div className="alert alert-success"><CheckCircle2 size={17}/><span>Sent to <strong>{recipient}</strong>{application.sent_at?' on '+new Date(application.sent_at).toLocaleString('en-IN'):''}.</span></div>}
+    <div className="review-layout"><section className="card"><span className="step-label"><span className="step-number">1</span>Your message</span><h2 className="card-title">A good first impression</h2><p className="card-subtitle">Review the subject and cover letter that will be sent to the recruiter.</p><div className="form-group"><label className="form-label" htmlFor="review-to">To</label><input id="review-to" className="form-input" readOnly value={recipient||'Recruiter contact needed'}/></div><div className="form-group"><label className="form-label" htmlFor="review-subject">Subject</label><input id="review-subject" className="form-input" disabled={sent||!!busy} value={subject} onChange={e=>setSubject(e.target.value)}/></div><div className="form-group"><label className="form-label" htmlFor="review-body">Cover letter</label><textarea id="review-body" className="form-textarea cover-letter-editor" disabled={sent||!!busy} value={body} onChange={e=>setBody(e.target.value)} placeholder="Write your introduction here…"/></div>{!sent&&<div className="review-save"><span>{dirty?'You have unsaved changes':'All changes saved'}</span><button className="btn btn-secondary" disabled={!!busy||!dirty} onClick={saveDraft}>{busy==='save'?<Loader2 size={15} className="spinner"/>:<Save size={15}/>}Save draft</button></div>}</section>
+    <aside className="dashboard-aside"><section className="card"><span className="step-label"><span className="step-number">2</span>Your resume</span><h2 className="card-title">Bring the right experience</h2><p className="card-subtitle">Choose the resume to attach to this application.</p><label className="form-label" htmlFor="review-resume">Attached resume</label><select id="review-resume" className="form-select" disabled={sent||!!busy} value={resumeId||''} onChange={e=>setResumeId(Number(e.target.value)||undefined)}><option value="">No resume attached</option>{resumes.map(r=><option key={r.id} value={r.id}>{r.title}</option>)}</select>{resumeId&&<div className="resume-attachment"><FileText size={18}/><span>{resumes.find(r=>r.id===resumeId)?.file_name||application.resume?.file_name}</span></div>}</section>
+    {!sent&&<section className="card"><span className="step-label"><span className="step-number">3</span>The final check</span><h2 className="card-title">Ready for your next move?</h2><p className="card-subtitle">Sending saves your latest edits and emails this message to the recruiter with your selected resume.</p>{!recipient?<div className="alert alert-warning">Add a recruiter contact before sending.</div>:null}{!body.trim()?<p className="card-subtitle">Add a cover letter to complete your message.</p>:null}{!resumeId?<p className="card-subtitle">No resume is attached.</p>:null}<button onClick={send} className="btn btn-primary" style={{width:'100%'}} disabled={!canSend||!!busy}>{busy==='send'?<Loader2 size={15} className="spinner"/>:<Send size={15}/>} {busy==='send'?'Sending application…':'Send application'}</button>{!recipient&&<Link to="/hr-contacts" className="text-link" style={{marginTop:16}}>Add recruiter contact <ArrowRight size={13}/></Link>}</section>}</aside></div>
+  </div>;
 };

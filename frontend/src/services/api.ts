@@ -130,6 +130,10 @@ export const resumesApi = {
   delete: async (id: number) => {
     await api.delete(`/resumes/${id}`);
   },
+  download: async (id: number) => {
+    const res = await api.get<Blob>(`/resumes/${id}/download`, { responseType: 'blob' });
+    return res.data;
+  },
   downloadUrl: (id: number) => `${API_BASE_URL}/resumes/${id}/download`,
 };
 
@@ -222,11 +226,11 @@ export const applicationsApi = {
     const res = await api.get<Application>(`/applications/${id}`);
     return res.data;
   },
-  create: async (data: { job_id: number; resume_id?: number; cover_letter_id?: number; hr_contact_id?: number; email_subject?: string; notes?: string }) => {
+  create: async (data: { job_id: number; resume_id?: number; cover_letter_id?: number; hr_contact_id?: number; email_subject?: string; notes?: string; cover_letter_content?: string }) => {
     const res = await api.post<Application>('/applications', data);
     return res.data;
   },
-  update: async (id: number, data: Partial<Application>) => {
+  update: async (id: number, data: Partial<Omit<Application, 'resume_id'>> & { resume_id?: number | null; cover_letter_content?: string }) => {
     const res = await api.put<Application>(`/applications/${id}`, data);
     return res.data;
   },

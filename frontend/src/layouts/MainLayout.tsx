@@ -1,122 +1,76 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Briefcase,
-  ListTodo,
-  FileText,
-  UserCheck,
-  Send,
-  Cpu,
-  Mail,
-  User as UserIcon,
-  LogOut,
-  Sparkles,
-  Zap,
-} from 'lucide-react';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowUpRight, Briefcase, Cpu, FileText, LayoutDashboard, ListTodo, LogOut, Mail, Menu, Send, UserCheck, UserRound, X, Zap } from 'lucide-react';
 import { authApi } from '../services/api';
-import { User } from '../types';
+import type { User } from '../types';
+
+const groups = [
+  { label: 'Workspace', items: [
+    { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
+    { label: 'Find jobs', path: '/jobs', icon: Briefcase },
+    { label: 'Applications', path: '/applications', icon: Send },
+    { label: 'Auto apply', path: '/auto-apply', icon: Zap },
+  ] },
+  { label: 'Your toolkit', items: [
+    { label: 'Resumes', path: '/resumes', icon: FileText },
+    { label: 'Target roles', path: '/job-titles', icon: ListTodo },
+    { label: 'Recruiter contacts', path: '/hr-contacts', icon: UserCheck },
+  ] },
+  { label: 'Settings', items: [
+    { label: 'My profile', path: '/profile', icon: UserRound },
+    { label: 'AI providers', path: '/llm-providers', icon: Cpu },
+    { label: 'Email connection', path: '/email-settings', icon: Mail },
+  ] },
+];
 
 export const MainLayout: React.FC = () => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-
+  const [menuOpen, setMenuOpen] = useState(false);
+  const currentPage = groups.flatMap(group => group.items).find(item => pathname === item.path || pathname.startsWith(item.path + '/'));
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-    authApi
-      .getMe()
-      .then(setCurrentUser)
-      .catch(() => {
-        localStorage.removeItem('token');
-        navigate('/login');
-      });
+    if (!localStorage.getItem('token')) { navigate('/login'); return; }
+    authApi.getMe().then(setCurrentUser).catch(() => { localStorage.removeItem('token'); navigate('/login'); });
   }, [navigate]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
-  const navItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Auto Apply Pipeline', path: '/auto-apply', icon: Zap },
-    { label: 'Job Search', path: '/jobs', icon: Briefcase },
-    { label: 'Job Titles', path: '/job-titles', icon: ListTodo },
-    { label: 'Resumes', path: '/resumes', icon: FileText },
-    { label: 'HR Contacts Required', path: '/hr-contacts', icon: UserCheck },
-    { label: 'Applications', path: '/applications', icon: Send },
-    { label: 'LLM Providers', path: '/llm-providers', icon: Cpu },
-    { label: 'Email Settings', path: '/email-settings', icon: Mail },
-    { label: 'Profile', path: '/profile', icon: UserIcon },
-  ];
-
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
   return (
     <div className="app-container">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-header">
-          <div className="sidebar-logo-icon">
-            <Sparkles size={20} />
-          </div>
-          <div>
-            <div className="sidebar-title">JobAutoApply</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-sub)' }}>Local Discovery & Apply</div>
-          </div>
-        </div>
-
-        <nav className="sidebar-nav">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              >
-                <Icon size={18} />
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          })}
+      <a href="#main-content" className="skip-link">Skip to content</a>
+      {menuOpen && <button className="sidebar-backdrop" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
+      <aside id="workspace-navigation" className={'sidebar' + (menuOpen ? ' is-open' : '')}>
+        <Link className="sidebar-header" to="/dashboard" aria-label="JobApply home">
+          <div className="sidebar-logo-icon"><Briefcase size={20} /></div>
+          <div><div className="sidebar-title">JobApply<span className="brand-dot">.</span></div><div className="brand-caption">Your next chapter</div></div>
+        </Link>
+        <nav className="sidebar-nav" aria-label="Main navigation">
+          {groups.map(group => <div className="nav-group" key={group.label}>
+            <p className="nav-group-label">{group.label}</p>
+            {group.items.map(item => <NavLink key={item.path} to={item.path} className={({ isActive }) => 'nav-link' + (isActive ? ' active' : '')}>
+              <item.icon size={18} /><span>{item.label}</span>
+            </NavLink>)}
+          </div>)}
         </nav>
-
+        <div className="sidebar-note"><span className="eyebrow">A little progress, every day</span><p>Your next opportunity starts with one good application.</p><Link to="/jobs">Explore jobs <ArrowUpRight size={14} /></Link></div>
         <div className="sidebar-footer">
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{currentUser?.email.split('@')[0]}</span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Local User</span>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="btn btn-secondary btn-sm"
-            title="Logout"
-            style={{ padding: '6px 8px' }}
-          >
-            <LogOut size={16} />
-          </button>
+          <div className="user-avatar">{currentUser?.email.charAt(0).toUpperCase() || 'J'}</div>
+          <div className="user-info"><strong>{currentUser?.email.split('@')[0] || 'Your workspace'}</strong><span>Personal workspace</span></div>
+          <button onClick={() => { localStorage.removeItem('token'); navigate('/login'); }} className="icon-button" aria-label="Sign out" title="Sign out"><LogOut size={17} /></button>
         </div>
       </aside>
-
-      {/* Main Content Area */}
       <div className="main-content">
         <header className="top-bar">
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-            Personal Local Assistant • Failover Enabled • SMTP Active
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span className="badge badge-source">Infopark & Technopark</span>
-            <span style={{ fontSize: '0.88rem', color: 'var(--text-main)', fontWeight: 500 }}>
-              {currentUser?.email}
-            </span>
-          </div>
+          <div className="breadcrumb"><button className="icon-button mobile-menu" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={menuOpen} aria-controls="workspace-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button><span>Workspace</span><span className="breadcrumb-divider">/</span><strong>{currentPage?.label || 'Overview'}</strong></div>
+          <div className="top-bar-actions"><span className="workspace-pill"><span className="status-dot" /> Personal workspace</span><Link to="/profile" className="user-avatar small" aria-label="Open your profile">{currentUser?.email.charAt(0).toUpperCase() || 'J'}</Link></div>
         </header>
-
-        <main className="page-body">
-          <Outlet />
-        </main>
+        <main id="main-content" className="page-body" tabIndex={-1}><Outlet /></main>
+        <footer className="workspace-footer"><span>Made for your next move.</span><span>Infopark · Technopark</span></footer>
       </div>
     </div>
   );
