@@ -1,3 +1,9 @@
+.skeleton { display: block; max-width: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--border-color) 25%, var(--bg-card-hover) 50%, var(--border-color) 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.6s ease-in-out infinite; }
+.skeleton-copy { display: flex; flex-direction: column; gap: 10px; }
+.skeleton-description { margin: 22px 0; }
+td > .skeleton + .skeleton { margin-top: 8px; }
+@keyframes skeleton-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
 :root {
   color-scheme: light; --bg-main: #f7f8fa; --bg-card: #fff; --bg-card-hover: #f4f7f7; --bg-input: #fff;
   --border-color: #e5e9ed; --border-focus: #177c70; --primary: #177c70; --primary-hover: #10665c; --primary-glow: rgba(23,124,112,.12);

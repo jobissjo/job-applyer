@@ -1,3 +1,4 @@
+import { CardListSkeleton } from '../components/ListSkeleton';
 import React, { useEffect, useState } from 'react';
 import { Upload, Trash2, Download, FileText, Check, Plus, Tag } from 'lucide-react';
 import { resumesApi, jobTitlesApi, formatApiError } from '../services/api';
@@ -18,13 +19,18 @@ export const Resumes: React.FC = () => {
   const [editingResume, setEditingResume] = useState<Resume | null>(null);
   const [editingTitleIds, setEditingTitleIds] = useState<number[]>([]);
 
+  const [loading, setLoading] = useState(true);
+
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [r, jt] = await Promise.all([resumesApi.list(), jobTitlesApi.list()]);
       setResumes(r);
       setJobTitles(jt);
     } catch (err) {
       setError(formatApiError(err, 'Could not complete the resume action.'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -196,7 +202,7 @@ export const Resumes: React.FC = () => {
           Your resumes ({resumes.length})
         </div>
 
-        {resumes.length === 0 ? (
+        {loading ? <CardListSkeleton variant="resumes" count={4} label="Loading resumes…" /> : resumes.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
             <FileText size={32} style={{ margin: '0 auto 12px auto', opacity: 0.5 }} />
             <p>No resumes uploaded yet. Upload your first resume above!</p>

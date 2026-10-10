@@ -1,3 +1,4 @@
+import { TableSkeleton } from '../components/ListSkeleton';
 import React, { useEffect, useState } from 'react';
 import { Cpu, Plus, Trash2, CheckCircle2, XCircle, ArrowUpDown, Key } from 'lucide-react';
 import { llmApi } from '../services/api';
@@ -188,7 +189,7 @@ export const LLMProviders: React.FC = () => {
           Configured Providers ({providers.length})
         </div>
 
-        {loading ? <div className="loading-state" role="status">Loading providers…</div> : providers.length === 0 ? (
+        {loading ? <TableSkeleton columns={["Priority", "Provider", "Model", "Key Preview", "Status", "Actions"]} rows={3} label="Loading providers…" /> : providers.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
             <Cpu size={32} style={{ margin: '0 auto 12px auto', opacity: 0.5 }} />
             <p>No LLM providers configured yet. Add at least one provider to enable matching and cover letter generation.</p>

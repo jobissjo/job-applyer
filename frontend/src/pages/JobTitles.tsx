@@ -1,3 +1,4 @@
+import { TableSkeleton } from '../components/ListSkeleton';
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Edit2, Check, X, ListTodo } from 'lucide-react';
 import { jobTitlesApi } from '../services/api';
@@ -107,9 +108,7 @@ export const JobTitles: React.FC = () => {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
-            Loading job titles...
-          </div>
+          <TableSkeleton columns={["Desired Job Title", "Status", "Created At", "Actions"]} label="Loading target roles…" />
         ) : titles.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
             <ListTodo size={32} style={{ margin: '0 auto 12px auto', opacity: 0.5 }} />

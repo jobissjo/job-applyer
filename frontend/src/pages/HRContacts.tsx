@@ -1,3 +1,4 @@
+import { TableSkeleton } from '../components/ListSkeleton';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { UserCheck, AlertTriangle, Plus, ExternalLink, ArrowRight, Trash2 } from 'lucide-react';
@@ -19,7 +20,10 @@ export const HRContacts: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  const [loading, setLoading] = useState(true);
+
   const fetchData = async () => {
+    setLoading(true);
     try {
       const [req, saved] = await Promise.all([
         hrContactsApi.listRequiredJobs(),
@@ -28,7 +32,9 @@ export const HRContacts: React.FC = () => {
       setRequiredJobs(req);
       setContacts(saved);
     } catch (err) {
-      console.error(err);
+      setMessage({ type: 'error', text: 'Could not load recruiter contacts. Please try again.' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -140,7 +146,7 @@ export const HRContacts: React.FC = () => {
             These jobs were scraped without an explicit contact email. Research the company's careers portal or LinkedIn to find recruiter contact info.
           </div>
 
-          {requiredJobs.length === 0 ? (
+          {loading ? <TableSkeleton columns={["Job Title", "Company", "Source", "Portal Link", "Date Scraped", "Actions"]} label="Loading jobs missing recruiter emails…" /> : requiredJobs.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
               <UserCheck size={32} style={{ margin: '0 auto 12px auto', opacity: 0.5 }} />
               <p>Awesome! All scraped jobs currently have HR emails configured.</p>
@@ -222,7 +228,7 @@ export const HRContacts: React.FC = () => {
             Recruiter and HR email addresses linked to specific job opportunities.
           </div>
 
-          {contacts.length === 0 ? (
+          {loading ? <TableSkeleton columns={["Company", "Recruiter Name", "Email", "Phone", "Source", "Added On", "Actions"]} label="Loading saved contacts…" /> : contacts.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
               No HR contacts saved manually yet.
             </div>
