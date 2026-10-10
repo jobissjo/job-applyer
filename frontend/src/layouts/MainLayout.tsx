@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowUpRight, Briefcase, Cpu, FileText, LayoutDashboard, ListTodo, LogOut, Mail, Menu, Send, UserCheck, UserRound, X, Zap } from 'lucide-react';
+import { ArrowUpRight, Briefcase, Cpu, FileText, LayoutDashboard, ListTodo, LogOut, Mail, Menu, PenLine, Send, UserCheck, UserRound, X, Zap } from 'lucide-react';
 import { authApi } from '../services/api';
 import type { User } from '../types';
 
@@ -8,6 +8,7 @@ const groups = [
   { label: 'Workspace', items: [
     { label: 'Overview', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Find jobs', path: '/jobs', icon: Briefcase },
+    { label: 'Manual apply', path: '/manual-apply', icon: PenLine },
     { label: 'Applications', path: '/applications', icon: Send },
     { label: 'Auto apply', path: '/auto-apply', icon: Zap },
   ] },

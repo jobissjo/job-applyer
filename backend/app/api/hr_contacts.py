@@ -11,6 +11,7 @@ from app.models.application import Application
 from app.schemas.hr_contact import HRContactCreate, HRContactUpdate, HRContactOut
 from app.schemas.job import JobOut
 from app.utils.security import get_current_user
+from app.services.job_access import get_accessible_job, visible_jobs
 
 router = APIRouter(prefix="/hr-contacts", tags=["HR Contacts"])
 
@@ -52,6 +53,7 @@ async def list_jobs_requiring_hr_contact(
     app_req_job_ids = set(app_req_res.scalars().all())
 
     stmt = select(Job).where(
+        visible_jobs(current_user.id),
         or_(
             and_(
                 or_(Job.contact_email == None, Job.contact_email == ""),
@@ -98,7 +100,7 @@ async def add_hr_contact(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    job = await db.get(Job, payload.job_id)
+    job = await get_accessible_job(payload.job_id, current_user.id, db)
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 

@@ -1,16 +1,19 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select, func, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.models.user import User
 from app.models.job import Job
+from app.models.manual_job import ManualJobOwnership
 from app.models.application import Application
 from app.models.hr_contact import HRContact
-from app.schemas.job import JobOut, JobPaginationResponse, JobAnalyzeResponse
+from app.schemas.job import JobOut, JobPaginationResponse, JobAnalyzeResponse, ManualJobCreate
 from app.schemas.cover_letter import CoverLetterOut, CoverLetterGenerateRequest
 from app.services.application_service import ApplicationService
+from app.services.job_access import get_accessible_job, visible_jobs
 from app.utils.security import get_current_user
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
@@ -25,7 +28,7 @@ async def list_jobs(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    base_filter = []
+    base_filter = [visible_jobs(current_user.id)]
     if source:
         base_filter.append(Job.source == source.lower().strip())
     if query:
@@ -122,13 +125,51 @@ async def list_jobs(
     )
 
 
+@router.post("/manual", response_model=JobOut, status_code=status.HTTP_201_CREATED)
+async def create_manual_job(
+    payload: ManualJobCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    user_id = current_user.id
+    source_id = f"{user_id}:{payload.request_id}"
+    lookup = select(Job).where(Job.source == "manual", Job.source_job_id == source_id)
+    existing = (await db.execute(lookup)).scalar_one_or_none()
+    if existing:
+        return await get_job(existing.id, current_user, db)
+
+    job = Job(
+        source="manual",
+        source_job_id=source_id,
+        title=payload.role,
+        company=payload.company or "Company not specified",
+        contact_email=str(payload.email),
+        description=payload.description,
+        job_url=str(payload.job_url) if payload.job_url else "",
+    )
+    db.add(job)
+    try:
+        await db.flush()
+        db.add(ManualJobOwnership(job_id=job.id, user_id=user_id))
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        existing = (await db.execute(lookup)).scalar_one_or_none()
+        if not existing:
+            raise
+        # Restore the dependency object after rollback expires ORM instances.
+        await db.refresh(current_user)
+        return await get_job(existing.id, current_user, db)
+    return await get_job(job.id, current_user, db)
+
+
 @router.get("/{job_id}", response_model=JobOut)
 async def get_job(
     job_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    job = await db.get(Job, job_id)
+    job = await get_accessible_job(job_id, current_user.id, db)
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
@@ -212,7 +253,7 @@ async def delete_job(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    job = await db.get(Job, job_id)
+    job = await get_accessible_job(job_id, current_user.id, db)
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 

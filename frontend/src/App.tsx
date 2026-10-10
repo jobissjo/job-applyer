@@ -15,6 +15,7 @@ import { LLMProviders } from './pages/LLMProviders';
 import { EmailSettings } from './pages/EmailSettings';
 import { Profile } from './pages/Profile';
 import { AutoApply } from './pages/AutoApply';
+import { ManualApply } from './pages/ManualApply';
 
 export const App: React.FC = () => {
   return (
@@ -29,6 +30,7 @@ export const App: React.FC = () => {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/auto-apply" element={<AutoApply />} />
+          <Route path="/manual-apply" element={<ManualApply />} />
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/jobs/:id" element={<JobDetail />} />
           <Route path="/job-titles" element={<JobTitles />} />

@@ -19,7 +19,7 @@ export const Applications: React.FC = () => {
       .finally(()=>{if(active)setLoading(false);});
     return ()=>{active=false;};
   },[status,retry]);
-  return <div><div className="page-heading"><div><span className="eyebrow">Every step counts</span><h1>Your applications</h1><p>Prepare, review, and follow the progress of every opportunity.</p></div><Link to="/jobs" className="btn btn-primary"><Search size={15} /> Find your next role</Link></div>
+  return <div><div className="page-heading"><div><span className="eyebrow">Every step counts</span><h1>Your applications</h1><p>Prepare, review, and follow the progress of every opportunity.</p></div><div className="heading-actions"><Link to="/manual-apply" className="btn btn-primary"><Send size={15} /> Manual apply</Link><Link to="/jobs" className="btn btn-secondary"><Search size={15} /> Find your next role</Link></div></div>
     <div className="filter-tabs" aria-label="Filter applications">{filters.map(filter=><button key={filter.value} className={'filter-tab'+(status===filter.value?' active':'')} aria-pressed={status===filter.value} onClick={()=>setParams(filter.value?{status:filter.value}:{})}>{filter.label}</button>)}</div>
     {error && <div className="alert alert-danger" role="alert"><AlertCircle size={16} /><span>{error}</span><button className="btn btn-secondary btn-sm" onClick={()=>setRetry(n=>n+1)}>Retry</button></div>}
     <section className="card"><div className="section-header"><div><h2>{filters.find(f=>f.value===status)?.label}</h2><p>{loading?'Loading your activity…':error?'Activity unavailable':applications.length+' applications'}</p></div></div>

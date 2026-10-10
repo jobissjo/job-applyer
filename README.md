@@ -10,6 +10,7 @@ Designed strictly for personal use on your local workstation. No Docker required
 
 The light workspace groups navigation into Workspace, Your toolkit, and Settings. The overview shows actual saved setup progress, recent applications, and the next actions to take. Navigation is available on mobile through the menu button.
 
+- **Manual apply for a job found elsewhere:** Open Manual apply, enter the role, recruiter email, and job description, and optionally add a company or listing link. Continue to choose a resume and write a cover letter, then review and send. These entries are private to your account.
 - **Manual application:** Find jobs → open an opportunity → analyze your fit → choose a resume and prepare a cover letter → review application → send. Sending saves the latest message and attachment selection first.
 - **Auto Apply:** Choose a source and search keyword, acknowledge that the run can send emails and create a resume from your profile, and start the run. The results show each application's actual status.
 - **Follow-ups:** Sent applications have a Follow up action in the list and detail page. Review and edit the suggested message, optionally reattach the resume, and send it to the original recruiter. Sent and failed attempts are stored separately from the original application.

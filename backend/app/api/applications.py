@@ -22,6 +22,7 @@ from app.schemas.resume import ResumeOut
 from app.schemas.cover_letter import CoverLetterOut
 from app.schemas.hr_contact import HRContactOut
 from app.services.application_service import ApplicationService
+from app.services.job_access import visible_jobs
 from app.utils.security import get_current_user
 
 router = APIRouter(tags=["Applications"])
@@ -171,8 +172,14 @@ async def update_application(
                 raise HTTPException(status_code=404, detail="Resume not found")
         app.resume_id = payload.resume_id
     if payload.cover_letter_id is not None:
+        letter = await db.get(CoverLetter, payload.cover_letter_id)
+        if not letter or letter.user_id != current_user.id or letter.job_id != app.job_id:
+            raise HTTPException(status_code=404, detail="Cover letter not found")
         app.cover_letter_id = payload.cover_letter_id
     if payload.hr_contact_id is not None:
+        contact = await db.get(HRContact, payload.hr_contact_id)
+        if not contact or contact.user_id != current_user.id or contact.job_id != app.job_id:
+            raise HTTPException(status_code=404, detail="HR contact not found")
         app.hr_contact_id = payload.hr_contact_id
     if payload.email_subject is not None:
         app.email_subject = payload.email_subject
@@ -277,7 +284,7 @@ async def get_dashboard_stats(
     db: AsyncSession = Depends(get_db)
 ):
     # Total Jobs
-    res_jobs = await db.execute(select(func.count(Job.id)))
+    res_jobs = await db.execute(select(func.count(Job.id)).where(visible_jobs(current_user.id)))
     total_jobs = res_jobs.scalar() or 0
 
     # User Applications by status
@@ -297,6 +304,7 @@ async def get_dashboard_stats(
 
     # Jobs missing HR email
     stmt_missing_hr = select(func.count(Job.id)).where(
+        visible_jobs(current_user.id),
         or_(Job.contact_email == None, Job.contact_email == "")
     )
     res_missing_hr = await db.execute(stmt_missing_hr)

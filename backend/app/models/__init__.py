@@ -5,6 +5,7 @@ from app.models.job_title import JobTitlePreference
 from app.models.resume import Resume
 from app.models.resume_job_title import ResumeJobTitle
 from app.models.job import Job
+from app.models.manual_job import ManualJobOwnership
 from app.models.llm import LLMProvider, LLMUsageLog
 from app.models.hr_contact import HRContact
 from app.models.cover_letter import CoverLetter
@@ -21,6 +22,7 @@ __all__ = [
     "Resume",
     "ResumeJobTitle",
     "Job",
+    "ManualJobOwnership",
     "LLMProvider",
     "LLMUsageLog",
     "HRContact",

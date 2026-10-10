@@ -139,6 +139,10 @@ export const resumesApi = {
 };
 
 export const jobsApi = {
+  createManual: async (data: { request_id: string; role: string; email: string; description: string; company?: string; job_url?: string }) => {
+    const res = await api.post<Job>('/jobs/manual', data);
+    return res.data;
+  },
   list: async (params?: { query?: string; source?: string; page?: number; limit?: number }) => {
     const res = await api.get<JobPagination>('/jobs', { params });
     return res.data;

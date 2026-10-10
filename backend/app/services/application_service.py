@@ -22,6 +22,7 @@ from app.services.llm.prompts.job_matching import JOB_MATCHING_SYSTEM_PROMPT, fo
 from app.services.llm.prompts.cover_letter import COVER_LETTER_SYSTEM_PROMPT, format_cover_letter_prompt
 from app.services.resume_service import ResumeService
 from app.services.email_service import EmailService
+from app.services.job_access import get_accessible_job
 from app.schemas.job import JobAnalyzeResponse
 from app.utils.logger import logger
 
@@ -36,7 +37,7 @@ class ApplicationService:
         resume_id: Optional[int],
         db: AsyncSession
     ) -> CoverLetter:
-        job = await db.get(Job, job_id)
+        job = await get_accessible_job(job_id, user_id, db)
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
         if resume_id is not None:
@@ -57,7 +58,7 @@ class ApplicationService:
     @staticmethod
     async def analyze_job(user_id: int, job_id: int, db: AsyncSession) -> JobAnalyzeResponse:
         # 1. Fetch Job
-        job = await db.get(Job, job_id)
+        job = await get_accessible_job(job_id, user_id, db)
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
@@ -178,7 +179,7 @@ class ApplicationService:
         custom_instructions: Optional[str] = None,
         db: Optional[AsyncSession] = None
     ) -> CoverLetter:
-        job = await db.get(Job, job_id)
+        job = await get_accessible_job(job_id, user_id, db)
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
@@ -250,9 +251,23 @@ class ApplicationService:
         notes: Optional[str] = None,
         db: Optional[AsyncSession] = None
     ) -> Application:
-        job = await db.get(Job, job_id)
+        job = await get_accessible_job(job_id, user_id, db)
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+
+        # Application attachments and contacts must belong to this user and job.
+        if resume_id is not None:
+            resume = await db.get(Resume, resume_id)
+            if not resume or resume.user_id != user_id:
+                raise HTTPException(status_code=404, detail="Resume not found")
+        if cover_letter_id is not None:
+            letter = await db.get(CoverLetter, cover_letter_id)
+            if not letter or letter.user_id != user_id or letter.job_id != job_id:
+                raise HTTPException(status_code=404, detail="Cover letter not found")
+        if hr_contact_id is not None:
+            contact = await db.get(HRContact, hr_contact_id)
+            if not contact or contact.user_id != user_id or contact.job_id != job_id:
+                raise HTTPException(status_code=404, detail="HR contact not found")
 
         # Verify HR contact availability
         effective_email = None
