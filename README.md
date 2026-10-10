@@ -242,3 +242,33 @@ pytest tests -v
 - All data, resumes, database tables, and settings reside strictly on your local disk.
 - API keys and SMTP passwords are never exposed in GET responses (previews are masked).
 - Manual applications are saved, reviewed, and then sent by the user. Auto Apply can send emails automatically when the user starts a run after acknowledging that behavior.
+
+
+### Scheduled manual emails
+
+Use **Schedule send** on the application review screen to choose a future time in
+the displayed browser timezone. Schedules persist in the database in UTC. Cancel
+the pending schedule to edit or send immediately.
+
+From `backend`, install dependencies and migrate existing databases:
+
+```sh
+python -m pip install -r requirements.txt
+python -m alembic upgrade head
+```
+
+Start Redis locally, in Docker, or in WSL. Set `CELERY_BROKER_URL` in `backend/.env`
+(default `redis://localhost:6379/0`). In separate terminals from `backend`, run:
+
+```sh
+python -m celery -A app.celery_app:celery_app worker --pool=solo --loglevel=info
+python -m celery -A app.celery_app:celery_app beat --loglevel=info
+```
+
+Use the same database and settings for the API and worker, and run one Beat instance.
+The worker checks every 30 seconds and sends via the user's saved SMTP settings.
+Redis, Beat, and the worker must remain running; overdue pending emails are sent
+when they resume. Failed delivery requires manual retry. Atomic claims prevent
+multiple workers sending the same schedule. SMTP is not automatically retried
+because delivery acceptance can be ambiguous. A worker crash after claiming leaves
+the application Sending; check the sender mailbox before resetting the database status to Ready. Linux/WSL is recommended for production workers.

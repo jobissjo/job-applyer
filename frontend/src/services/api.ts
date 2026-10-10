@@ -243,6 +243,14 @@ export const applicationsApi = {
     const res = await api.get<ApplicationPreview>(`/applications/${id}/preview`);
     return res.data;
   },
+  schedule: async (id: number, scheduled_at: string) => {
+    const res = await api.post<Application>(`/applications/${id}/schedule`, { scheduled_at });
+    return res.data;
+  },
+  cancelSchedule: async (id: number) => {
+    const res = await api.delete<Application>(`/applications/${id}/schedule`);
+    return res.data;
+  },
   send: async (id: number) => {
     const res = await api.post<Application>(`/applications/${id}/send`);
     return res.data;

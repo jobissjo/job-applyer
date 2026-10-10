@@ -298,6 +298,8 @@ class ApplicationService:
         )
         res_app = await db.execute(stmt_app)
         application = res_app.scalars().first()
+        if application and application.status in ("scheduled", "sending"):
+            raise HTTPException(status_code=409, detail="Cancel the schedule before editing")
 
         # Generate default subject if not provided
         if not email_subject:
@@ -375,7 +377,8 @@ class ApplicationService:
     async def send_application(
         user_id: int,
         application_id: int,
-        db: AsyncSession
+        db: AsyncSession,
+        scheduled_dispatch: bool = False,
     ) -> Application:
         stmt = (
             select(Application)
@@ -392,6 +395,9 @@ class ApplicationService:
 
         if not application:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+        if application.status in ("scheduled", "sending") and not scheduled_dispatch:
+            raise HTTPException(status_code=409, detail="Cancel the schedule before sending immediately")
 
         # Safety Check 1: Must not be already sent
         if application.status == "sent":
@@ -431,6 +437,8 @@ class ApplicationService:
         job_title = application.job.title if application.job and application.job.title else "Job"
         
         resume_path = application.resume.file_path if application.resume else None
+        if scheduled_dispatch and application.resume and (not resume_path or not Path(resume_path).is_file()):
+            raise HTTPException(status_code=400, detail="Scheduled resume attachment is unavailable")
         attachment_filename = None
         if resume_path:
             attachment_filename = ApplicationService.get_formatted_attachment_name(

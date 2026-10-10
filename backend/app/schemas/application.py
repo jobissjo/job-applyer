@@ -1,10 +1,22 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, AwareDatetime, field_validator
+from datetime import timezone
 from app.schemas.job import JobOut
 from app.schemas.resume import ResumeOut
 from app.schemas.cover_letter import CoverLetterOut
 from app.schemas.hr_contact import HRContactOut
+
+
+class ApplicationSchedule(BaseModel):
+    scheduled_at: AwareDatetime
+
+    @field_validator("scheduled_at")
+    @classmethod
+    def future_time(cls, value):
+        if value <= datetime.now(timezone.utc):
+            raise ValueError("Choose a future date and time")
+        return value.astimezone(timezone.utc)
 
 
 class ApplicationCreate(BaseModel):
@@ -38,6 +50,7 @@ class ApplicationOut(BaseModel):
     email_subject: Optional[str] = None
     sent_to: Optional[str] = None
     sent_at: Optional[datetime] = None
+    scheduled_at: Optional[datetime] = None
     notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
@@ -46,6 +59,13 @@ class ApplicationOut(BaseModel):
     resume: Optional[ResumeOut] = None
     cover_letter: Optional[CoverLetterOut] = None
     hr_contact: Optional[HRContactOut] = None
+
+    @field_validator("scheduled_at")
+    @classmethod
+    def utc_schedule(cls, value):
+        if value is not None and value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
 
     model_config = ConfigDict(from_attributes=True)
 

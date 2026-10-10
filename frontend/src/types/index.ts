@@ -135,10 +135,11 @@ export interface Application {
   resume_id?: number;
   cover_letter_id?: number;
   hr_contact_id?: number;
-  status: 'draft' | 'hr_contact_required' | 'ready' | 'sent' | 'failed' | 'cancelled';
+  status: 'draft' | 'hr_contact_required' | 'ready' | 'scheduled' | 'sending' | 'sent' | 'failed' | 'cancelled';
   email_subject?: string;
   sent_to?: string;
   sent_at?: string;
+  scheduled_at?: string;
   notes?: string;
   created_at: string;
   updated_at: string;

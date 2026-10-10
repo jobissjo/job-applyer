@@ -12,6 +12,7 @@ from app.models.cover_letter import CoverLetter
 from app.models.hr_contact import HRContact
 from app.models.application import Application
 from app.schemas.application import (
+    ApplicationSchedule,
     ApplicationCreate,
     ApplicationUpdate,
     ApplicationOut,
@@ -65,6 +66,7 @@ async def list_applications(
                 email_subject=app.email_subject,
                 sent_to=app.sent_to,
                 sent_at=app.sent_at,
+                scheduled_at=app.scheduled_at,
                 notes=app.notes,
                 created_at=app.created_at,
                 updated_at=app.updated_at,
@@ -83,6 +85,12 @@ async def create_or_prepare_application(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    existing = (await db.execute(select(Application).where(
+        Application.user_id == current_user.id, Application.job_id == payload.job_id,
+        Application.status.in_(("scheduled", "sending")),
+    ))).scalars().first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Cancel the schedule before editing")
     cover_letter_id = payload.cover_letter_id
     if payload.cover_letter_content is not None:
         letter = await ApplicationService.save_reviewed_cover_letter(
@@ -137,6 +145,7 @@ async def get_application_by_id(
         email_subject=app.email_subject,
         sent_to=app.sent_to,
         sent_at=app.sent_at,
+        scheduled_at=app.scheduled_at,
         notes=app.notes,
         created_at=app.created_at,
         updated_at=app.updated_at,
@@ -164,6 +173,11 @@ async def update_application(
 
     if not app:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+    if app.status in ("scheduled", "sending"):
+        raise HTTPException(status_code=409, detail="Cancel the schedule before editing this application")
+    if payload.status in ("scheduled", "sending", "sent"):
+        raise HTTPException(status_code=400, detail="Use the send or schedule action to dispatch an application")
 
     if "resume_id" in payload.model_fields_set:
         if payload.resume_id is not None:
@@ -228,7 +242,7 @@ async def preview_application(
         recipient_email = app.job.contact_email
 
     has_hr = bool(recipient_email)
-    can_send = has_hr and (app.status != "sent")
+    can_send = has_hr and app.status not in ("sent", "scheduled", "sending")
     reason = None
     if not has_hr:
         reason = "No HR contact email available. Please add an HR contact before sending."
@@ -259,6 +273,29 @@ async def preview_application(
         can_send=can_send,
         reason_cannot_send=reason
     )
+
+
+@router.post("/applications/{application_id}/schedule", response_model=ApplicationOut)
+async def schedule_application(application_id: int, payload: ApplicationSchedule,
+                               current_user: User = Depends(get_current_user),
+                               db: AsyncSession = Depends(get_db)):
+    from app.services.scheduled_email import schedule
+    await schedule(application_id, current_user.id, payload.scheduled_at, db)
+    return await get_application_by_id(application_id, current_user, db)
+
+
+@router.delete("/applications/{application_id}/schedule", response_model=ApplicationOut)
+async def cancel_schedule(application_id: int, current_user: User = Depends(get_current_user),
+                          db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import update
+    result = await db.execute(update(Application).where(
+        Application.id == application_id, Application.user_id == current_user.id,
+        Application.status == "scheduled",
+    ).values(status="ready", scheduled_at=None))
+    await db.commit()
+    if not result.rowcount:
+        raise HTTPException(status_code=409, detail="No pending schedule to cancel")
+    return await get_application_by_id(application_id, current_user, db)
 
 
 @router.post("/applications/{application_id}/send", response_model=ApplicationOut)

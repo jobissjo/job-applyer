@@ -29,6 +29,7 @@ class Application(Base, TimestampMixin):
     email_subject: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     sent_to: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    scheduled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     user: Mapped["User"] = relationship("User", back_populates="applications")

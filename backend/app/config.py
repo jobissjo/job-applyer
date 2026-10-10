@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     # Database - Async SQLite by default
     DATABASE_URL: str = "sqlite+aiosqlite:///./job_auto_apply.db"
     
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+
     # JWT Auth
     JWT_SECRET_KEY: str = "super-secret-local-jwt-key-replace-in-production-1234567890"
     JWT_ALGORITHM: str = "HS256"
