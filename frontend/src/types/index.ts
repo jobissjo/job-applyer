@@ -194,7 +194,8 @@ export interface ApplicationFollowUp {
   subject: string;
   body: string;
   attach_resume: boolean;
-  status: 'sending' | 'sent' | 'failed';
+  status: 'scheduled' | 'cancelled' | 'sending' | 'sent' | 'failed';
+  scheduled_at?: string;
   sent_at?: string;
   error_message?: string;
   created_at: string;

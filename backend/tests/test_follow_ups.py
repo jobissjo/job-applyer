@@ -160,3 +160,68 @@ async def test_follow_up_can_attach_original_resume(client, db_session, user_a, 
     assert response.json()["attach_resume"] is True
     assert send.call_args.kwargs["resume_path"] == str(resume_file)
     assert send.call_args.kwargs["attachment_filename"] == "User A_(Python Engineer).pdf"
+
+
+@pytest.mark.asyncio
+async def test_scheduled_follow_up_dispatch_and_cancel(client, db_session, user_a, user_b, sample_job, payload):
+    from datetime import timedelta
+    from sqlalchemy import update
+    from app.models.follow_up import ApplicationFollowUp
+    from app.services.scheduled_follow_up import dispatch_due
+    application = await original(db_session, user_a, sample_job)
+    path = f"/api/applications/{application.id}/follow-ups"
+    future = datetime.now(timezone.utc) + timedelta(hours=1)
+    with patch("app.services.email_service.EmailService.send_application_email", new_callable=AsyncMock, return_value=(True, "Sent")) as send:
+        response = await client.post(path, json={**payload, "scheduled_at": future.isoformat()}, headers=user_a["headers"])
+        assert response.status_code == 200
+        item = response.json()
+        assert item["status"] == "scheduled"
+        assert item["scheduled_at"].endswith("Z")
+        repeat = await client.post(path, json={**payload, "scheduled_at": future.isoformat()}, headers=user_a["headers"])
+        assert repeat.json()["id"] == item["id"]
+        await dispatch_due(db_session)
+        send.assert_not_awaited()
+        cancel_path = f"{path}/{item['id']}/cancel"
+        assert (await client.post(cancel_path, headers=user_b["headers"])).status_code == 404
+        assert (await client.post(cancel_path, headers=user_a["headers"])).json()["status"] == "cancelled"
+        assert (await client.post(cancel_path, headers=user_a["headers"])).status_code == 409
+        response = await client.post(path, json={**payload, "request_id": str(uuid4()), "scheduled_at": future.isoformat()}, headers=user_a["headers"])
+        next_id = response.json()["id"]
+        await db_session.execute(update(ApplicationFollowUp).where(ApplicationFollowUp.application_id == application.id).values(scheduled_at=datetime.now(timezone.utc) - timedelta(seconds=1)))
+        await db_session.commit()
+        await dispatch_due(db_session)
+        await dispatch_due(db_session)
+        assert send.await_count == 1
+        assert send.call_args.kwargs["to_email"] == "original.recruiter@example.com"
+        history = (await client.get(path, headers=user_a["headers"])).json()
+        assert next(x for x in history if x["id"] == next_id)["status"] == "sent"
+        assert next(x for x in history if x["id"] == item["id"])["status"] == "cancelled"
+        assert (await client.post(f"{path}/{next_id}/cancel", headers=user_a["headers"])).status_code == 409
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("scheduled_at", ["2020-01-01T10:00:00Z", "2030-01-01T10:00:00"])
+async def test_follow_up_rejects_invalid_schedule(client, db_session, user_a, sample_job, payload, scheduled_at):
+    application = await original(db_session, user_a, sample_job)
+    response = await client.post(f"/api/applications/{application.id}/follow-ups", json={**payload, "scheduled_at": scheduled_at}, headers=user_a["headers"])
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_scheduled_follow_up_failure(client, db_session, user_a, sample_job, payload):
+    from datetime import timedelta
+    from sqlalchemy import update
+    from app.models.follow_up import ApplicationFollowUp
+    from app.services.scheduled_follow_up import dispatch_due
+    application = await original(db_session, user_a, sample_job)
+    response = await client.post(f"/api/applications/{application.id}/follow-ups", json={**payload, "scheduled_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()}, headers=user_a["headers"])
+    application_id = application.id
+    follow_up_id = response.json()["id"]
+    await db_session.execute(update(ApplicationFollowUp).where(ApplicationFollowUp.id == follow_up_id).values(scheduled_at=datetime.now(timezone.utc) - timedelta(seconds=1)))
+    await db_session.commit()
+    with patch("app.services.email_service.EmailService.send_application_email", new_callable=AsyncMock, side_effect=RuntimeError("connection lost")) as send:
+        await dispatch_due(db_session)
+        await dispatch_due(db_session)
+        assert send.await_count == 1
+    history = (await client.get(f"/api/applications/{application_id}/follow-ups", headers=user_a["headers"])).json()
+    assert history[0]["status"] == "failed"

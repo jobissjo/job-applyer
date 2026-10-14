@@ -250,6 +250,11 @@ Use **Schedule send** on the application review screen to choose a future time i
 the displayed browser timezone. Schedules persist in the database in UTC. Cancel
 the pending schedule to edit or send immediately.
 
+Sent applications also support **Schedule send (optional)** in the follow-up
+composer. Choose a future local date/time, or leave it empty to send immediately.
+Follow-up history shows the scheduled time and lets you cancel pending follow-ups.
+Follow-ups use the same worker and Beat setup described below.
+
 From `backend`, install dependencies and migrate existing databases:
 
 ```sh

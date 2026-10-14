@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -95,7 +95,8 @@ async def send_follow_up(
         subject=payload.subject,
         body=payload.body,
         attach_resume=payload.attach_resume,
-        status="sending",
+        status="scheduled" if payload.scheduled_at else "sending",
+        scheduled_at=payload.scheduled_at,
     )
     db.add(follow_up)
     try:
@@ -107,6 +108,10 @@ async def send_follow_up(
         if existing:
             return existing
         raise
+
+    if payload.scheduled_at:
+        await db.refresh(follow_up)
+        return follow_up
 
     try:
         success, message = await EmailService.send_application_email(
@@ -125,3 +130,18 @@ async def send_follow_up(
     await db.commit()
     await db.refresh(follow_up)
     return follow_up
+
+
+@router.post("/applications/{application_id}/follow-ups/{follow_up_id}/cancel", response_model=FollowUpOut)
+async def cancel_follow_up(application_id: int, follow_up_id: int,
+                           current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await owned_application(application_id, current_user.id, db)
+    claim = await db.execute(update(ApplicationFollowUp).where(
+        ApplicationFollowUp.id == follow_up_id, ApplicationFollowUp.application_id == application_id,
+        ApplicationFollowUp.user_id == current_user.id, ApplicationFollowUp.status == "scheduled",
+    ).values(status="cancelled"))
+    if not claim.rowcount:
+        await db.rollback()
+        raise HTTPException(409, "Follow-up is no longer scheduled; refresh the history")
+    await db.commit()
+    return (await db.execute(select(ApplicationFollowUp).where(ApplicationFollowUp.id == follow_up_id))).scalar_one()
