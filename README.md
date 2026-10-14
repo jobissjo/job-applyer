@@ -241,14 +241,21 @@ pytest tests -v
 ## 🛡️ Privacy & Security Notes
 - All data, resumes, database tables, and settings reside strictly on your local disk.
 - API keys and SMTP passwords are never exposed in GET responses (previews are masked).
-- Manual applications are saved, reviewed, and then sent by the user. Auto Apply can send emails automatically when the user starts a run after acknowledging that behavior.
+- Manual and Auto Apply applications are saved for review. Auto Apply sends only jobs selected with checkboxes and explicitly approved by the user.
 
 
-### Scheduled manual emails
+### Scheduled application emails
 
 Use **Schedule send** on the application review screen to choose a future time in
 the displayed browser timezone. Schedules persist in the database in UTC. Cancel
 the pending schedule to edit or send immediately.
+
+In **Auto apply**, run **Find and prepare applications**, review each email, and
+select the jobs you want to apply to. Click **Approve and send now** to send only
+those jobs immediately. Enable **Schedule approved emails**, choose a future local
+date/time, and click **Approve and schedule** to send them later. Unselected jobs
+stay saved without being sent. Manage or cancel pending schedules in Applications.
+Already sent or scheduled applications are skipped on subsequent search runs.
 
 Sent applications also support **Schedule send (optional)** in the follow-up
 composer. Choose a future local date/time, or leave it empty to send immediately.

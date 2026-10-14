@@ -272,6 +272,10 @@ export const autoApplyApi = {
       hr_required_count: number;
       jobs: Array<{
         job_id: number;
+        application_id?: number;
+        email_subject?: string;
+        cover_letter_text?: string;
+        scheduled_at?: string;
         title: string;
         company: string;
         hr_email?: string;

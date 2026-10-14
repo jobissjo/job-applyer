@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,13 +7,12 @@ from app.models.profile import UserProfile
 from app.models.job import Job
 from app.models.job_title import JobTitlePreference
 from app.models.resume import Resume
-from app.models.email_settings import EmailSettings
+from app.models.hr_contact import HRContact
 from app.models.application import Application
 from app.services.scraper.technopark import TechnoparkScraper
 from app.services.scraper.infopark import InfoparkScraper
 from app.services.resume_service import ResumeService
 from app.services.application_service import ApplicationService
-from app.services.email_service import EmailService
 from scripts.scraper_utils import upsert_scraped_jobs
 from app.utils.logger import logger
 
@@ -87,11 +85,6 @@ class AutoApplyService:
         ready_count = 0
         hr_required_count = 0
 
-        # Check if user has SMTP configured
-        stmt_smtp = select(EmailSettings).where(EmailSettings.user_id == user_id)
-        res_smtp = await db.execute(stmt_smtp)
-        smtp_configured = bool(res_smtp.scalar_one_or_none())
-
         for sj in scraped_jobs:
             stmt_job = select(Job).where(Job.source == sj.source, Job.source_job_id == sj.source_job_id)
             res_job = await db.execute(stmt_job)
@@ -101,6 +94,9 @@ class AutoApplyService:
 
             job_log = {
                 "job_id": db_job.id,
+                "application_id": None,
+                "email_subject": None,
+                "cover_letter_text": None,
                 "title": db_job.title,
                 "company": db_job.company,
                 "hr_email": db_job.contact_email,
@@ -111,6 +107,15 @@ class AutoApplyService:
             }
 
             try:
+                existing = (await db.execute(select(Application).where(
+                    Application.user_id == user_id, Application.job_id == db_job.id,
+                ))).scalars().first()
+                if existing and existing.status in ("sent", "scheduled", "sending"):
+                    job_log.update(application_id=existing.id, status=existing.status,
+                                   message="Already sent or scheduled; skipped this run.")
+                    results.append(job_log)
+                    continue
+
                 # Step A: Match job against user job titles
                 match_res = await ApplicationService.analyze_job(user_id=user_id, job_id=db_job.id, db=db)
                 matched_title_str = match_res.job_title or user_titles[0].title
@@ -160,29 +165,20 @@ class AutoApplyService:
                     db=db
                 )
 
-                # Step E: Apply / Send if HR contact exists
-                if app.status == "ready" or db_job.contact_email:
-                    if smtp_configured:
-                        try:
-                            sent_app = await ApplicationService.send_application(
-                                user_id=user_id,
-                                application_id=app.id,
-                                db=db
-                            )
-                            job_log["status"] = sent_app.status
-                            job_log["message"] = f"Application successfully sent to {sent_app.sent_to}"
-                            applied_count += 1
-                        except Exception as send_err:
-                            job_log["status"] = "ready"
-                            job_log["message"] = f"Application ready to send (SMTP dispatch attempted: {send_err})"
-                            ready_count += 1
-                    else:
-                        job_log["status"] = "ready"
-                        job_log["message"] = f"Application prepared & ready for {db_job.contact_email} (Configure SMTP in settings to dispatch emails)"
-                        ready_count += 1
+                # Discovery only prepares drafts. Dispatch requires explicit user approval.
+                if app.hr_contact_id:
+                    contact = await db.get(HRContact, app.hr_contact_id)
+                    if contact and contact.email:
+                        job_log["hr_email"] = contact.email
+                job_log.update(application_id=app.id, email_subject=app.email_subject,
+                               cover_letter_text=cl.content)
+                if app.status != "hr_contact_required":
+                    job_log["status"] = "ready"
+                    job_log["message"] = "Prepared for review. Select this job to approve sending."
+                    ready_count += 1
                 else:
                     job_log["status"] = "hr_contact_required"
-                    job_log["message"] = "Job listing missing recruiter email. Added to HR Contacts Required."
+                    job_log["message"] = "Add a recruiter email before approving this application."
                     hr_required_count += 1
 
             except Exception as e:

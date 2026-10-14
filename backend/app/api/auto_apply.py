@@ -32,7 +32,7 @@ async def run_auto_apply_pipeline(
     4. Matches against job titles with LLM failover.
     5. If matching resume not found, creates/synthesizes one automatically!
     6. Generates tailored cover letter.
-    7. Applies/prepares application and sends via SMTP if HR contact is available!
+    7. Prepares applications for review; sending or scheduling requires explicit approval.
     """
     try:
         report = await AutoApplyService.run_pipeline(
