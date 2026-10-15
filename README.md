@@ -24,8 +24,8 @@ Frontend development uses port 8080 by default. If that port is occupied, Vite c
    - Each local user has isolated profile data, desired job titles, resumes, LLM API keys, HR contacts, and application records.
    - User ownership is strictly verified on every single backend API endpoint.
 
-2. **Infopark & Technopark Scrapers**:
-   - Modular `BaseScraper` with robust parsers for **Infopark** (`infopark.in`) and **Technopark** (`technopark.org`).
+2. **IT Park Job Scrapers**:
+   - Modular `BaseScraper` with robust parsers for **Infopark** (`infopark.in`), **Technopark** (`technopark.in`), **Cyberpark** (`cyberparks.in`), **UL CyberPark** (`ulcyberpark.com`), and **SmartCity Kochi** (`smartcity-kochi.in`).
    - Deterministic deduplication: re-scraping updates existing jobs without duplicate spam.
    - CLI tools: `scrape_infopark.py`, `scrape_technopark.py`, and unified `run_scrapers.py`.
 
@@ -64,7 +64,7 @@ JobApplyer/
 │   │   ├── models/                  # SQLAlchemy 2.0 Mapped models
 │   │   ├── schemas/                 # Pydantic request/response validation
 │   │   ├── services/
-│   │   │   ├── scraper/             # Infopark & Technopark scraping
+│   │   │   ├── scraper/             # IT park job scraping
 │   │   │   ├── llm/                 # OpenRouter, Groq, Gemini & Failover Manager
 │   │   │   ├── resume_service.py    # PDF/DOCX text parsing
 │   │   │   ├── application_service.py
@@ -153,11 +153,22 @@ python scripts/scrape_infopark.py --query python --limit 10
 # Scrape Technopark listings:
 python scripts/scrape_technopark.py --query python --limit 10
 
-# Or run both simultaneously:
+# Search the new parks individually:
+python scripts/run_scrapers.py --source cyberpark --query python --limit 10
+python scripts/run_scrapers.py --source ulcyberpark --query python --limit 10
+
+# Search SmartCity Kochi:
+python scripts/run_scrapers.py --source smartcity --query java --limit 10
+
+# Or search all five parks:
 python scripts/run_scrapers.py --query python --limit 20
 ```
 
-*Note: If the remote portals are temporarily unreachable or rate-limited, the scrapers automatically provide realistic structured fallback listings for smooth local testing.*
+Choose **Cyberpark · Kozhikode** or **UL CyberPark · Kozhikode** in Auto apply to discover jobs and prepare applications. Both sources are also available in the Jobs source filter after discovery. Applications still require review and explicit approval before sending.
+
+Cyberpark uses its public keyword-search endpoint. UL CyberPark has no keyword endpoint: the scraper reads published listing pages and filters titles, companies, descriptions, and skills using all search words, regardless of case. Its page number refers to pages of matching results. This can take longer for narrow searches. Neither new scraper generates fallback vacancies: no matches return an empty result, and fetch or parsing failures are reported as errors. The older Infopark and Technopark scrapers retain their existing sample-fallback behavior.
+
+**SmartCity Kochi** is also available in Auto apply and the Jobs source filter. It reads company job posts, filters titles, companies, and descriptions by all search words, and paginates matching results. Recruiter contacts come only from each post, never from park contact details. Published dates are preserved; the site retains older vacancies, so check the original listing before applying. Fetch and layout errors are reported without generating sample jobs.
 
 ---
 

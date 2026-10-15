@@ -9,8 +9,7 @@ from app.models.job_title import JobTitlePreference
 from app.models.resume import Resume
 from app.models.hr_contact import HRContact
 from app.models.application import Application
-from app.services.scraper.technopark import TechnoparkScraper
-from app.services.scraper.infopark import InfoparkScraper
+from app.services.scraper.registry import get_scraper
 from app.services.resume_service import ResumeService
 from app.services.application_service import ApplicationService
 from scripts.scraper_utils import upsert_scraped_jobs
@@ -29,6 +28,8 @@ class AutoApplyService:
     ) -> Dict[str, Any]:
         if not db:
             raise ValueError("Database session is required")
+        scraper = get_scraper(source)
+        source = scraper.SOURCE_NAME
 
         logger.info(f"[AutoApplyPipeline] Starting for user_id={user_id}, source={source}, query='{query}', limit={limit}")
 
@@ -72,7 +73,6 @@ class AutoApplyService:
             logger.info(f"[AutoApplyPipeline] Auto-configured job title preference: {default_title}")
 
         # 3. Choose Scraper and Fetch Live Jobs
-        scraper = TechnoparkScraper() if source.lower() == "technopark" else InfoparkScraper()
         scraped_jobs = await scraper.search(query=query, page=page, limit=limit)
         logger.info(f"[AutoApplyPipeline] Scraped {len(scraped_jobs)} jobs from {source}")
 

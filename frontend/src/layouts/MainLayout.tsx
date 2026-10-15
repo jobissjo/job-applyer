@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowUpRight, Briefcase, Cpu, FileText, LayoutDashboard, ListTodo, LogOut, Mail, Menu, PenLine, Send, UserCheck, UserRound, X, Zap } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { authApi } from '../services/api';
 import type { User } from '../types';
 
@@ -68,7 +69,7 @@ export const MainLayout: React.FC = () => {
       <div className="main-content">
         <header className="top-bar">
           <div className="breadcrumb"><button className="icon-button mobile-menu" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={menuOpen} aria-controls="workspace-navigation" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button><span>Workspace</span><span className="breadcrumb-divider">/</span><strong>{currentPage?.label || 'Overview'}</strong></div>
-          <div className="top-bar-actions"><span className="workspace-pill"><span className="status-dot" /> Personal workspace</span><Link to="/profile" className="user-avatar small" aria-label="Open your profile">{currentUser?.email.charAt(0).toUpperCase() || 'J'}</Link></div>
+          <div className="top-bar-actions"><ThemeToggle /><span className="workspace-pill"><span className="status-dot" /> Personal workspace</span><Link to="/profile" className="user-avatar small" aria-label="Open your profile">{currentUser?.email.charAt(0).toUpperCase() || 'J'}</Link></div>
         </header>
         <main id="main-content" className="page-body" tabIndex={-1}><Outlet /></main>
         <footer className="workspace-footer"><span>Made for your next move.</span><span>Infopark · Technopark</span></footer>

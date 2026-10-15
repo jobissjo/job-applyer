@@ -12,13 +12,14 @@ from sqlalchemy import select
 from app.db.session import AsyncSessionLocal, init_db
 from app.models.user import User
 from app.services.auto_apply_service import AutoApplyService
+from app.services.scraper.registry import SCRAPERS
 from app.utils.logger import logger
 
 
 async def main():
     parser = argparse.ArgumentParser(description="Automate job search, resume matching/synthesis, cover letter generation, and apply")
     parser.add_argument("--user-email", type=str, default="jobiss2002@gmail.com", help="Email of local user")
-    parser.add_argument("--source", type=str, default="technopark", choices=["technopark", "infopark"], help="Target portal")
+    parser.add_argument("--source", type=str, default="technopark", choices=list(SCRAPERS), help="Target portal")
     parser.add_argument("--query", type=str, default="python", help="Search keyword (e.g. 'python', 'fastapi')")
     parser.add_argument("--page", type=int, default=1, help="Portal page number")
     parser.add_argument("--limit", type=int, default=5, help="Number of listings to process")
