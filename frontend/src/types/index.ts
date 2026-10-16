@@ -92,7 +92,7 @@ export interface JobAnalyzeResponse {
 export interface LLMProvider {
   id: number;
   user_id: number;
-  provider: 'openrouter' | 'groq' | 'gemini';
+  provider: 'openrouter' | 'groq' | 'gemini' | 'xkiro';
   model: string;
   priority: number;
   active: boolean;

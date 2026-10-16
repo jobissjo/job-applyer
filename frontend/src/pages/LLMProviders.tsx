@@ -8,7 +8,7 @@ export const LLMProviders: React.FC = () => {
   const [providers, setProviders] = useState<LLMProvider[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [providerType, setProviderType] = useState<'openrouter' | 'groq' | 'gemini'>('openrouter');
+  const [providerType, setProviderType] = useState<LLMProvider['provider']>('openrouter');
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState('meta-llama/llama-3.3-70b-instruct');
   const [priority, setPriority] = useState(1);
@@ -33,7 +33,7 @@ export const LLMProviders: React.FC = () => {
     fetchProviders();
   }, []);
 
-  const handleProviderTypeChange = (val: 'openrouter' | 'groq' | 'gemini') => {
+  const handleProviderTypeChange = (val: LLMProvider['provider']) => {
     setProviderType(val);
     if (val === 'openrouter') {
       setModel('meta-llama/llama-3.3-70b-instruct');
@@ -41,6 +41,8 @@ export const LLMProviders: React.FC = () => {
       setModel('llama-3.3-70b-versatile');
     } else if (val === 'gemini') {
       setModel('gemini-1.5-flash');
+    } else if (val === 'xkiro') {
+      setModel('');
     }
   };
 
@@ -48,6 +50,10 @@ export const LLMProviders: React.FC = () => {
     e.preventDefault();
     if (!apiKey.trim()) {
       setError('Please provide an API key');
+      return;
+    }
+    if (providerType === 'xkiro' && !/^\S+\/\S+$/.test(model.trim())) {
+      setError('Enter the full xKiro model identifier in vendor/model format.');
       return;
     }
     setError('');
@@ -136,6 +142,7 @@ export const LLMProviders: React.FC = () => {
                 <option value="openrouter">OpenRouter</option>
                 <option value="groq">Groq</option>
                 <option value="gemini">Google Gemini</option>
+                <option value="xkiro">xKiro</option>
               </select>
             </div>
 
@@ -145,10 +152,11 @@ export const LLMProviders: React.FC = () => {
                 type="text"
                 required
                 className="form-input"
-                placeholder="e.g. llama-3.3-70b"
+                placeholder={providerType === 'xkiro' ? 'vendor/model' : 'e.g. llama-3.3-70b'}
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
               />
+              {providerType === 'xkiro' && <p className="card-subtitle">Copy the full model ID from the <a href="https://docs.xkiro.com/api/list-models/" target="_blank" rel="noopener noreferrer">xKiro model catalog</a>. Model access depends on your account.</p>}
             </div>
 
             <div className="form-group">
@@ -216,7 +224,7 @@ export const LLMProviders: React.FC = () => {
                       </span>
                     </td>
                     <td style={{ fontWeight: 600, textTransform: 'capitalize' }}>
-                      {p.provider}
+                      {p.provider === 'xkiro' ? 'xKiro' : p.provider}
                     </td>
                     <td>
                       <code style={{ fontSize: '0.85rem', color: 'var(--accent-cyan)' }}>

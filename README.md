@@ -1,6 +1,6 @@
 # JobApply — Your next chapter
 
-A local-only, developer-friendly job discovery and application assistant built with **FastAPI**, **React + TypeScript**, **Async SQLite + SQLAlchemy 2.0 (`Mapped` / `mapped_column`)**, **Alembic**, and multi-provider **LLM Failover** (OpenRouter, Groq, Gemini).
+A local-only, developer-friendly job discovery and application assistant built with **FastAPI**, **React + TypeScript**, **Async SQLite + SQLAlchemy 2.0 (`Mapped` / `mapped_column`)**, **Alembic**, and multi-provider **LLM Failover** (OpenRouter, Groq, Gemini, xKiro).
 
 Designed strictly for personal use on your local workstation. No Docker required, no microservices, no cloud vendor lock-in, and zero unsolicited automated email spam.
 
@@ -35,7 +35,7 @@ Frontend development uses port 8080 by default. If that port is occupied, Vite c
    - Many-to-many mapping linking resumes to configured desired job titles.
 
 4. **Multi-LLM Automatic Failover**:
-   - Supports **OpenRouter**, **Groq**, and **Google Gemini**.
+   - Supports **OpenRouter**, **Groq**, **Google Gemini**, and **xKiro**.
    - User-defined priority ordering (Priority 1 = primary).
    - If a provider hits a rate limit (HTTP 429), quota exhaustion, or temporary 5xx error, it automatically fails over to the next priority provider.
    - Masked API key previews (`sk-...abcd`) ensuring keys are never exposed in GET responses.
@@ -295,3 +295,9 @@ when they resume. Failed delivery requires manual retry. Atomic claims prevent
 multiple workers sending the same schedule. SMTP is not automatically retried
 because delivery acceptance can be ambiguous. A worker crash after claiming leaves
 the application Sending; check the sender mailbox before resetting the database status to Ready. Linux/WSL is recommended for production workers.
+
+### xKiro AI provider
+
+In **AI providers**, choose **xKiro**, enter your xKiro API key, and copy a full `vendor/model` identifier from the [xKiro model catalog](https://docs.xkiro.com/api/list-models/). Set its priority, save it, and use **Test API** to check your credentials and model access. The model field is deliberately empty when you select xKiro so you choose a model available to your account.
+
+The backend calls `https://api.xkiro.com/v1/chat/completions` with Bearer authentication. xKiro participates in the existing priority-based failover for job matching and cover letters. JSON output is requested and validated for matching; invalid or truncated output can fail over to the next provider. Existing provider settings need no migration. See the [xKiro API reference](https://docs.xkiro.com/api/chat-completions/).

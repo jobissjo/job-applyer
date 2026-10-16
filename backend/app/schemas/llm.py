@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class LLMProviderCreate(BaseModel):
-    provider: str  # "openrouter", "groq", "gemini"
+    provider: str  # "openrouter", "groq", "gemini", "xkiro"
     api_key: str
     model: str
     priority: int = 1

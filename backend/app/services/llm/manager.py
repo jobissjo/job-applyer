@@ -15,6 +15,7 @@ from app.services.llm.base import (
 from app.services.llm.openrouter import OpenRouterClient
 from app.services.llm.groq import GroqClient
 from app.services.llm.gemini import GeminiClient
+from app.services.llm.xkiro import XkiroClient
 from app.utils.logger import logger
 
 
@@ -28,6 +29,8 @@ class LLMManager:
             return GroqClient(api_key=api_key, model=model)
         elif provider_clean == "gemini":
             return GeminiClient(api_key=api_key, model=model)
+        elif provider_clean == "xkiro":
+            return XkiroClient(api_key=api_key, model=model)
         else:
             raise ValueError(f"Unsupported LLM provider: {provider_name}")
 
@@ -58,7 +61,7 @@ class LLMManager:
 
         providers = await LLMManager.get_user_providers(user_id, db)
         if not providers:
-            raise LLMError("No active LLM providers configured. Please configure OpenRouter, Groq, or Gemini in LLM Settings.")
+            raise LLMError("No active LLM providers configured. Please configure OpenRouter, Groq, Gemini, or xKiro in LLM Settings.")
 
         errors: List[str] = []
 

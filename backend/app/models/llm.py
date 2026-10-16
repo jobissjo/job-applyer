@@ -12,7 +12,7 @@ class LLMProvider(Base, TimestampMixin):
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
     )
-    provider: Mapped[str] = mapped_column(String(50), nullable=False)  # "openrouter", "groq", "gemini"
+    provider: Mapped[str] = mapped_column(String(50), nullable=False)  # "openrouter", "groq", "gemini", "xkiro"
     api_key: Mapped[str] = mapped_column(String(500), nullable=False)
     model: Mapped[str] = mapped_column(String(255), nullable=False)
     priority: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
