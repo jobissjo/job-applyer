@@ -210,3 +210,28 @@ export interface LearningItem {
   entries: LearningEntry[];
 }
 export interface SkillGap { skill: string; reason: string; }
+
+export interface InterviewStudySection {
+  id: number;
+  title: string;
+  priority: 'high' | 'medium' | 'low';
+  reason: string;
+  estimated_minutes: number;
+  topics: string[];
+  practice_tasks: string[];
+  questions: Array<{ question: string; answer_guide: string }>;
+  completed: boolean;
+}
+
+export interface InterviewPreparation {
+  id: number;
+  application_id: number;
+  generation_id: string;
+  resume_id: number | null;
+  resume_title: string | null;
+  context: string | null;
+  summary: string;
+  created_at: string;
+  updated_at: string;
+  sections: InterviewStudySection[];
+}

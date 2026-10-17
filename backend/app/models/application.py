@@ -39,3 +39,6 @@ class Application(Base, TimestampMixin):
     resume: Mapped[Optional["Resume"]] = relationship("Resume", back_populates="applications")
     cover_letter: Mapped[Optional["CoverLetter"]] = relationship("CoverLetter", back_populates="applications")
     hr_contact: Mapped[Optional["HRContact"]] = relationship("HRContact", back_populates="applications")
+    interview_preparation: Mapped[Optional["InterviewPreparation"]] = relationship(
+        "InterviewPreparation", cascade="all, delete-orphan", uselist=False,
+    )

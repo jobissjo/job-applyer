@@ -13,6 +13,7 @@ from app.models.application import Application
 from app.models.follow_up import ApplicationFollowUp
 from app.models.email_settings import EmailSettings
 from app.models.learning import LearningItem, LearningJob, LearningEntry
+from app.models.interview_preparation import InterviewPreparation, InterviewSection
 
 __all__ = [
     "Base",
@@ -30,5 +31,7 @@ __all__ = [
     "CoverLetter",
     "Application",
     "ApplicationFollowUp",
+    "InterviewPreparation",
+    "InterviewSection",
     "EmailSettings",
 ]

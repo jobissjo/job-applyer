@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { LearningItem, LearningStatus, LearningEntry, SkillGap } from '../types';
+import type { LearningItem, LearningStatus, LearningEntry, SkillGap, InterviewPreparation } from '../types';
 import {
   User,
   UserProfile,
@@ -277,6 +277,14 @@ export const applicationsApi = {
     const res = await api.get<DashboardStats>('/dashboard-stats');
     return res.data;
   },
+};
+
+export const interviewPreparationApi = {
+  get: async (applicationId: number) => (await api.get<InterviewPreparation | null>(`/applications/${applicationId}/interview-preparation`)).data,
+  generate: async (applicationId: number, data: { resume_id: number | null; context: string; replace_generation?: string }) =>
+    (await api.post<InterviewPreparation>(`/applications/${applicationId}/interview-preparation`, data)).data,
+  setCompleted: async (applicationId: number, sectionId: number, generation_id: string, completed: boolean) =>
+    (await api.patch<InterviewPreparation>(`/applications/${applicationId}/interview-preparation/sections/${sectionId}`, { generation_id, completed })).data,
 };
 
 export const autoApplyApi = {

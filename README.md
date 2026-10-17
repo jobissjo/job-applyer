@@ -21,6 +21,18 @@ Frontend development uses port 8080 by default. If that port is occupied, Vite c
 
 ### Learning from job requirements
 
+On any **application detail** page, choose **Prepare for interview** to generate a
+saved study plan using the job requirements, your profile, and an optional resume.
+This also works for applications submitted elsewhere, without HR contacts or email
+setup. Each section includes a priority, a reason to focus on it, study topics,
+practice tasks, sample questions with answer guides, and an estimated study time.
+Mark sections completed to save progress. Add optional context such as the interview
+round, interview date, or available study time to focus the AI suggestions. A new
+plan explicitly replaces the old checklist; generation errors preserve your saved
+plan. Configure an AI provider first. Sparse job details produce more general
+role-based suggestions, and sample questions are not predictions of the interview.
+Run `python -m alembic upgrade head` from `backend` and restart the API for this update.
+
 Open **Learning** in Your toolkit to track skills with Planned, In progress,
 Completed, or On hold status. Each skill supports multiple editable notes and
 resource links. On any job or application screen, choose a resume and click

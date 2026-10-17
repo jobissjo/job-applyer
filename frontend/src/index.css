@@ -312,3 +312,23 @@ tr:hover td { background: #fafcfb; }
 .learning-panel form { margin-top: 18px; }
 .learning-chip { display: inline-flex; margin: 8px 8px 0 0; border: 1px solid var(--border-color); border-radius: 20px; padding: 6px 12px; color: var(--primary); font-size: 12px; }
 @media (max-width: 768px) { .learning-workspace { grid-template-columns: 1fr; } }
+
+/* Application interview preparation */
+.interview-preparation { margin-top: 23px; scroll-margin-top: 24px; }
+.interview-preparation h2 { display: flex; align-items: center; gap: 8px; }
+.interview-preparation fieldset { border: 0; padding: 0; min-width: 0; }
+.interview-summary { margin: 20px 0 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.interview-sections { display: grid; gap: 14px; margin-top: 18px; }
+.interview-section { border: 1px solid var(--border-color); border-radius: 8px; padding: 18px; overflow-wrap: anywhere; }
+.interview-section-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; }
+.interview-section-toolbar .card-subtitle { margin: 0; }
+.interview-complete { display: flex; align-items: center; gap: 7px; margin-left: auto; font-size: 12px; cursor: pointer; }
+.interview-complete input { accent-color: var(--primary); }
+.interview-section summary { cursor: pointer; font-size: 15px; font-weight: 600; line-height: 1.6; }
+.interview-section h3 { font-size: 13px; margin: 20px 0 9px; }
+.interview-section ul { padding-left: 22px; font-size: 13px; line-height: 1.7; }
+.interview-section li + li { margin-top: 6px; }
+.interview-reason { color: var(--text-muted); font-size: 13px; line-height: 1.7; margin-top: 12px; }
+.interview-question { padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+.interview-question summary { font-size: 13px; font-weight: 500; }
+.interview-question p { font-size: 13px; line-height: 1.7; margin-top: 10px; color: var(--text-muted); }
