@@ -1,6 +1,6 @@
 # JobApply — Your next chapter
 
-A local-only, developer-friendly job discovery and application assistant built with **FastAPI**, **React + TypeScript**, **Async SQLite + SQLAlchemy 2.0 (`Mapped` / `mapped_column`)**, **Alembic**, and multi-provider **LLM Failover** (OpenRouter, Groq, Gemini, xKiro).
+A developer-friendly job discovery and application assistant built with **FastAPI**, **React + TypeScript**, **PostgreSQL / local SQLite + SQLAlchemy 2.0 (`Mapped` / `mapped_column`)**, **Alembic**, and multi-provider **LLM Failover** (OpenRouter, Groq, Gemini, xKiro).
 
 Designed strictly for personal use on your local workstation. No Docker required, no microservices, no cloud vendor lock-in, and zero unsolicited automated email spam.
 
@@ -86,7 +86,7 @@ JobApplyer/
 │   │   │   ├── resume_service.py    # PDF/DOCX text parsing
 │   │   │   ├── application_service.py
 │   │   │   └── email_service.py     # Async SMTP mailer
-│   │   ├── db/                      # Async SQLite engine & session
+│   │   ├── db/                      # Async PostgreSQL / SQLite engine & session
 │   │   └── utils/                   # Security (JWT, bcrypt) & logger
 │   ├── scripts/                     # Scraper CLI scripts
 │   ├── tests/                       # Pytest automated test suite
@@ -139,10 +139,30 @@ JobApplyer/
    pip install -r requirements.txt
    ```
 
-4. Run database migrations:
+4. Configure `backend/.env` and run database migrations:
    ```bash
    alembic upgrade head
    ```
+
+   For production PostgreSQL, set
+   `DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/DATABASE`.
+   Plain `postgresql://` and `postgres://` URLs are normalized to psycopg;
+   explicit `postgresql+asyncpg://` URLs are also supported. Alembic uses
+   synchronous psycopg while the API and workers use async connections.
+   Dependencies include both PostgreSQL drivers. URL-encode special characters
+   in passwords and use the same settings for the API, workers, and migrations.
+   SQLite remains the zero-configuration local default.
+
+   Run migrations before starting production services. They support fresh
+   databases and databases whose tables were previously created at startup.
+   Changing `DATABASE_URL` connects to that database; it does not copy existing
+   SQLite data into PostgreSQL.
+
+   To run PostgreSQL regression tests, set `POSTGRES_TEST_URL` to a test server
+   URL and run `pytest tests/test_database_compatibility.py -v` from `backend`.
+   These tests create and remove their own temporary schemas; the test account
+   needs permission to create schemas. Without that variable, PostgreSQL
+   integration checks are skipped while SQL compilation and SQLite checks run.
 
 5. (Optional) Run automated tests to verify your setup:
    ```bash

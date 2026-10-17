@@ -24,17 +24,14 @@ if str(backend_dir) not in sys.path:
 
 from app.models import Base
 from app.config import settings
+from app.db.urls import database_url
 
 target_metadata = Base.metadata
 
 # Convert async url to sync for alembic if needed
-db_url = settings.DATABASE_URL
-if db_url.startswith("sqlite+aiosqlite:"):
-    db_url = db_url.replace("sqlite+aiosqlite:", "sqlite:")
-elif db_url.startswith("postgresql+asyncpg:"):
-    db_url = db_url.replace("postgresql+asyncpg:", "postgresql+psycopg:")
-
-config.set_main_option("sqlalchemy.url", db_url)
+db_url = database_url(settings.DATABASE_URL, asynchronous=False)
+# ConfigParser treats percent signs in URL-encoded passwords as interpolation.
+config.set_main_option("sqlalchemy.url", db_url.render_as_string(hide_password=False).replace("%", "%%"))
 
 
 
@@ -69,6 +66,11 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    connection = config.attributes.get("connection")
+    if connection is not None:
+        configure_connection(connection)
+        return
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
@@ -76,12 +78,14 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        configure_connection(connection)
+    connectable.dispose()
 
-        with context.begin_transaction():
-            context.run_migrations()
+
+def configure_connection(connection):
+    context.configure(connection=connection, target_metadata=target_metadata)
+    with context.begin_transaction():
+        context.run_migrations()
 
 
 if context.is_offline_mode():

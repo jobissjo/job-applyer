@@ -3,20 +3,23 @@ from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from app.config import settings
 from app.db.base import Base
+from app.db.urls import database_url
 
+url = database_url(settings.DATABASE_URL)
 connect_args = {}
-if "sqlite" in settings.DATABASE_URL:
+if url.get_backend_name() == "sqlite":
     connect_args["check_same_thread"] = False
 
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    url,
     echo=False,
     connect_args=connect_args,
     future=True,
+    pool_pre_ping=True,
 )
 
 # Enable foreign keys for SQLite
-if "sqlite" in settings.DATABASE_URL:
+if url.get_backend_name() == "sqlite":
     @event.listens_for(engine.sync_engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()

@@ -3,9 +3,9 @@ import unicodedata
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import ValidationError
 from sqlalchemy import select
-from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
+from app.db.statements import insert_do_nothing
 from app.models.user import User
 from app.models.profile import UserProfile
 from app.models.resume import Resume
@@ -47,10 +47,13 @@ async def create_item(payload: LearningCreate, user: User = Depends(get_current_
         await get_accessible_job(job_id, user.id, db)
     key = " ".join(unicodedata.normalize("NFKC", payload.skill).casefold().split())
     # Unique keys and conflict-safe inserts also deduplicate simultaneous requests.
-    await db.execute(insert(LearningItem).values(user_id=user.id, skill=payload.skill, skill_key=key, status="planned").on_conflict_do_nothing(index_elements=["user_id", "skill_key"]))
+    await db.execute(insert_do_nothing(db, LearningItem,
+        values={"user_id": user.id, "skill": payload.skill, "skill_key": key, "status": "planned"},
+        index_elements=["user_id", "skill_key"]))
     item = (await db.scalars(select(LearningItem).where(LearningItem.user_id == user.id, LearningItem.skill_key == key))).one()
     for job_id in set(payload.job_ids):
-        await db.execute(insert(LearningJob).values(item_id=item.id, job_id=job_id).on_conflict_do_nothing())
+        await db.execute(insert_do_nothing(db, LearningJob,
+            values={"item_id": item.id, "job_id": job_id}, index_elements=["item_id", "job_id"]))
     await db.commit()
     return await output(item, user.id, db)
 
