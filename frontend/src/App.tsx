@@ -16,6 +16,7 @@ import { EmailSettings } from './pages/EmailSettings';
 import { Profile } from './pages/Profile';
 import { AutoApply } from './pages/AutoApply';
 import { ManualApply } from './pages/ManualApply';
+import { Learning } from './pages/Learning';
 
 export const App: React.FC = () => {
   return (
@@ -35,6 +36,7 @@ export const App: React.FC = () => {
           <Route path="/jobs/:id" element={<JobDetail />} />
           <Route path="/job-titles" element={<JobTitles />} />
           <Route path="/resumes" element={<Resumes />} />
+          <Route path="/learning" element={<Learning />} />
           <Route path="/hr-contacts" element={<HRContacts />} />
           <Route path="/applications" element={<Applications />} />
           <Route path="/applications/:id" element={<ApplicationDetail />} />

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowUpRight, Briefcase, Cpu, FileText, LayoutDashboard, ListTodo, LogOut, Mail, Menu, PenLine, Send, UserCheck, UserRound, X, Zap } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { BookOpen } from 'lucide-react';
 import { authApi } from '../services/api';
 import type { User } from '../types';
 
@@ -15,6 +16,7 @@ const groups = [
   ] },
   { label: 'Your toolkit', items: [
     { label: 'Resumes', path: '/resumes', icon: FileText },
+    { label: 'Learning', path: '/learning', icon: BookOpen },
     { label: 'Target roles', path: '/job-titles', icon: ListTodo },
     { label: 'Recruiter contacts', path: '/hr-contacts', icon: UserCheck },
   ] },

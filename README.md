@@ -18,6 +18,23 @@ The light workspace groups navigation into Workspace, Your toolkit, and Settings
 
 Frontend development uses port 8080 by default. If that port is occupied, Vite chooses another port; configure the backend's FRONTEND_URL to allow that origin.
 
+### Learning from job requirements
+
+Open **Learning** in Your toolkit to track skills with Planned, In progress,
+Completed, or On hold status. Each skill supports multiple editable notes and
+resource links. On any job or application screen, choose a resume and click
+**Find skill gaps** to compare its extracted text and your profile details with
+the job requirements using your configured AI provider. Review the suggestions
+and click **Add / link**, or type a skill manually without AI.
+
+Adding the same skill name (ignoring case and extra spaces) for another job reuses
+the existing learning item and adds that job to its links, keeping progress and
+notes. Use a consistent name for aliases such as JS and JavaScript. You can search
+skills or linked jobs, filter status, unlink jobs, and manage notes/resources in
+Learning. All learning data is private to your account. Run `python -m alembic
+upgrade head` from `backend` and restart the API for this update. See
+[the implementation plan](docs/learning-plan.md).
+
 ## 🎯 Key Features
 
 1. **Local-First & Multi-User Isolated**:

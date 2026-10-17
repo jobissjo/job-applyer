@@ -12,6 +12,7 @@ from app.models.cover_letter import CoverLetter
 from app.models.application import Application
 from app.models.follow_up import ApplicationFollowUp
 from app.models.email_settings import EmailSettings
+from app.models.learning import LearningItem, LearningJob, LearningEntry
 
 __all__ = [
     "Base",

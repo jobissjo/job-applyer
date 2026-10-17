@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { LearningItem, LearningStatus, LearningEntry, SkillGap } from '../types';
 import {
   User,
   UserProfile,
@@ -25,6 +26,20 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+export const learningApi = {
+  list: async () => (await api.get<LearningItem[]>('/learning')).data,
+  create: async (skill: string, job_ids: number[] = []) => (await api.post<LearningItem>('/learning', { skill, job_ids })).data,
+  update: async (id: number, status: LearningStatus) => (await api.patch<LearningItem>(`/learning/${id}`, { status })).data,
+  delete: async (id: number) => { await api.delete(`/learning/${id}`); },
+  unlink: async (id: number, jobId: number) => { await api.delete(`/learning/${id}/jobs/${jobId}`); },
+  gaps: async (jobId: number, resume_id: number) => (await api.post<{ skills: SkillGap[] }>(`/learning/jobs/${jobId}/gaps`, { resume_id })).data.skills,
+  saveEntry: async (id: number, data: Pick<LearningEntry, 'kind' | 'content' | 'url'>, entryId?: number) => {
+    const url = `/learning/${id}/entries`;
+    return (entryId ? await api.put<LearningItem>(`${url}/${entryId}`, data) : await api.post<LearningItem>(url, data)).data;
+  },
+  deleteEntry: async (id: number, entryId: number) => { await api.delete(`/learning/${id}/entries/${entryId}`); },
+};
 
 // Attach JWT token to requests
 api.interceptors.request.use((config) => {

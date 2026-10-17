@@ -17,6 +17,7 @@ from app.api import (
     applications,
     auto_apply,
     follow_ups,
+    learning,
 )
 from app.utils.logger import logger
 
@@ -66,6 +67,7 @@ app.include_router(email.router, prefix=settings.API_V1_STR)
 app.include_router(applications.router, prefix=settings.API_V1_STR)
 app.include_router(auto_apply.router, prefix=settings.API_V1_STR)
 app.include_router(follow_ups.router, prefix=settings.API_V1_STR)
+app.include_router(learning.router, prefix=settings.API_V1_STR)
 
 
 @app.get("/health", tags=["Health"])

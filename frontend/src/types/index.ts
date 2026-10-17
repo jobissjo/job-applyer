@@ -200,3 +200,11 @@ export interface ApplicationFollowUp {
   error_message?: string;
   created_at: string;
 }
+export type LearningStatus = 'planned' | 'in_progress' | 'completed' | 'on_hold';
+export interface LearningEntry { id: number; kind: 'note' | 'resource'; content: string; url: string | null; }
+export interface LearningItem {
+  id: number; skill: string; status: LearningStatus;
+  jobs: Array<{ id: number; title: string; company: string }>;
+  entries: LearningEntry[];
+}
+export interface SkillGap { skill: string; reason: string; }
