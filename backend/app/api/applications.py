@@ -2,6 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select, func, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from app.db.session import get_db
@@ -11,9 +12,11 @@ from app.models.resume import Resume
 from app.models.cover_letter import CoverLetter
 from app.models.hr_contact import HRContact
 from app.models.application import Application
+from app.models.manual_job import ManualJobOwnership
 from app.schemas.application import (
     ApplicationSchedule,
     ApplicationCreate,
+    ExternalApplicationCreate,
     ApplicationUpdate,
     ApplicationOut,
     ApplicationPreviewResponse
@@ -67,6 +70,8 @@ async def list_applications(
                 sent_to=app.sent_to,
                 sent_at=app.sent_at,
                 scheduled_at=app.scheduled_at,
+                applied_on=app.applied_on,
+                application_method=app.application_method,
                 notes=app.notes,
                 created_at=app.created_at,
                 updated_at=app.updated_at,
@@ -87,9 +92,11 @@ async def create_or_prepare_application(
 ):
     existing = (await db.execute(select(Application).where(
         Application.user_id == current_user.id, Application.job_id == payload.job_id,
-        Application.status.in_(("scheduled", "sending")),
+        Application.status.in_(("scheduled", "sending", "applied_externally")),
     ))).scalars().first()
     if existing:
+        if existing.status == "applied_externally":
+            raise HTTPException(status_code=409, detail="This application was submitted elsewhere and is saved for tracking only")
         raise HTTPException(status_code=409, detail="Cancel the schedule before editing")
     cover_letter_id = payload.cover_letter_id
     if payload.cover_letter_content is not None:
@@ -109,6 +116,48 @@ async def create_or_prepare_application(
         db=db
     )
     return await get_application_by_id(app.id, current_user, db)
+
+
+@router.post("/applications/external", response_model=ApplicationOut, status_code=status.HTTP_201_CREATED)
+async def record_external_application(
+    payload: ExternalApplicationCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    user_id = current_user.id
+    source_id = f"{user_id}:external:{payload.request_id}"
+    lookup = select(Application).join(Job).where(
+        Application.user_id == user_id, Job.source == "manual", Job.source_job_id == source_id,
+    )
+    existing = (await db.execute(lookup)).scalar_one_or_none()
+    if existing:
+        return await get_application_by_id(existing.id, current_user, db)
+
+    job = Job(
+        source="manual", source_job_id=source_id, title=payload.role, company=payload.company,
+        contact_email=str(payload.contact_email) if payload.contact_email else None,
+        contact_name=payload.contact_name, contact_phone=payload.contact_phone,
+        description=payload.description, job_url=str(payload.job_url) if payload.job_url else "",
+    )
+    db.add(job)
+    try:
+        await db.flush()
+        db.add(ManualJobOwnership(job_id=job.id, user_id=user_id))
+        application = Application(
+            user_id=user_id, job_id=job.id, status="applied_externally",
+            applied_on=payload.applied_on, application_method=payload.application_method,
+            notes=payload.notes,
+        )
+        db.add(application)
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        existing = (await db.execute(lookup)).scalar_one_or_none()
+        if not existing:
+            raise
+        await db.refresh(current_user)
+        return await get_application_by_id(existing.id, current_user, db)
+    return await get_application_by_id(application.id, current_user, db)
 
 
 @router.get("/applications/{application_id}", response_model=ApplicationOut)
@@ -146,6 +195,8 @@ async def get_application_by_id(
         sent_to=app.sent_to,
         sent_at=app.sent_at,
         scheduled_at=app.scheduled_at,
+        applied_on=app.applied_on,
+        application_method=app.application_method,
         notes=app.notes,
         created_at=app.created_at,
         updated_at=app.updated_at,
@@ -174,10 +225,18 @@ async def update_application(
     if not app:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
 
+    if app.status == "applied_externally":
+        if payload.model_fields_set - {"notes"}:
+            raise HTTPException(status_code=400, detail="Only tracking notes can be changed for an application submitted elsewhere")
+        if "notes" in payload.model_fields_set:
+            app.notes = payload.notes
+        await db.commit()
+        return await get_application_by_id(application_id, current_user, db)
+
     if app.status in ("scheduled", "sending"):
         raise HTTPException(status_code=409, detail="Cancel the schedule before editing this application")
-    if payload.status in ("scheduled", "sending", "sent"):
-        raise HTTPException(status_code=400, detail="Use the send or schedule action to dispatch an application")
+    if payload.status in ("scheduled", "sending", "sent", "applied_externally"):
+        raise HTTPException(status_code=400, detail="Use the dedicated send, schedule, or record-external action for this status")
 
     if "resume_id" in payload.model_fields_set:
         if payload.resume_id is not None:
@@ -242,9 +301,11 @@ async def preview_application(
         recipient_email = app.job.contact_email
 
     has_hr = bool(recipient_email)
-    can_send = has_hr and app.status not in ("sent", "scheduled", "sending")
+    can_send = has_hr and app.status not in ("sent", "scheduled", "sending", "applied_externally")
     reason = None
-    if not has_hr:
+    if app.status == "applied_externally":
+        reason = "This application was submitted elsewhere and is saved for tracking only."
+    elif not has_hr:
         reason = "No HR contact email available. Please add an HR contact before sending."
     elif app.status == "sent":
         reason = "This application has already been dispatched."
@@ -342,6 +403,9 @@ async def get_dashboard_stats(
     # Jobs missing HR email
     stmt_missing_hr = select(func.count(Job.id)).where(
         visible_jobs(current_user.id),
+        ~Job.id.in_(select(Application.job_id).where(
+            Application.user_id == current_user.id, Application.status == "applied_externally",
+        )),
         or_(Job.contact_email == None, Job.contact_email == "")
     )
     res_missing_hr = await db.execute(stmt_missing_hr)

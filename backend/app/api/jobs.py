@@ -111,7 +111,7 @@ async def list_jobs(
                 updated_at=j.updated_at,
                 raw_data=j.raw_data,
                 has_hr_contact=has_contact,
-                is_applied=(app_status == "sent"),
+                is_applied=(app_status in ("sent", "applied_externally")),
                 application_status=app_status
             )
         )
@@ -211,7 +211,7 @@ async def get_job(
         updated_at=job.updated_at,
         raw_data=job.raw_data,
         has_hr_contact=bool(effective_email),
-        is_applied=(app.status == "sent") if app else False,
+        is_applied=(app.status in ("sent", "applied_externally")) if app else False,
         application_status=app.status if app else None
     )
 

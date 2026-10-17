@@ -16,6 +16,7 @@ import { EmailSettings } from './pages/EmailSettings';
 import { Profile } from './pages/Profile';
 import { AutoApply } from './pages/AutoApply';
 import { ManualApply } from './pages/ManualApply';
+import { AddExternalApplication } from './pages/AddExternalApplication';
 import { Learning } from './pages/Learning';
 
 export const App: React.FC = () => {
@@ -39,6 +40,7 @@ export const App: React.FC = () => {
           <Route path="/learning" element={<Learning />} />
           <Route path="/hr-contacts" element={<HRContacts />} />
           <Route path="/applications" element={<Applications />} />
+          <Route path="/applications/add" element={<AddExternalApplication />} />
           <Route path="/applications/:id" element={<ApplicationDetail />} />
           <Route path="/llm-providers" element={<LLMProviders />} />
           <Route path="/email-settings" element={<EmailSettings />} />

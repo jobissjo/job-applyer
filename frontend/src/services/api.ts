@@ -238,6 +238,9 @@ export const emailApi = {
 };
 
 export const applicationsApi = {
+  recordExternal: async (data: { request_id: string; role: string; company: string; applied_on: string; application_method: string; contact_email?: string; contact_name?: string; contact_phone?: string; job_url?: string; description?: string; notes?: string }) => {
+    return (await api.post<Application>('/applications/external', data)).data;
+  },
   list: async (status?: string) => {
     const res = await api.get<Application[]>('/applications', { params: { status } });
     return res.data;

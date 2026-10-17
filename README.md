@@ -15,6 +15,7 @@ The light workspace groups navigation into Workspace, Your toolkit, and Settings
 - **Auto Apply:** Choose a source and search keyword, acknowledge that the run can send emails and create a resume from your profile, and start the run. The results show each application's actual status.
 - **Follow-ups:** Sent applications have a Follow up action in the list and detail page. Review and edit the suggested message, optionally reattach the resume, and send it to the original recruiter. Sent and failed attempts are stored separately from the original application.
 - **Application tracking:** Filter by ready, sent, contact needed, draft, or failed. Dashboard links open the corresponding filter directly.
+- **Already applied elsewhere:** In Applications, click **Add already applied** to record a role submitted through a company website, job portal, referral, email, or another method. Enter the role, company, date, and how you applied. HR contact details, listing link, description, and tracking notes are optional. These private records appear under **Applied elsewhere**; you can update notes without a resume, AI provider, or SMTP setup. JobApply never sends or schedules emails for these records, and missing contacts do not create HR reminders. Run `python -m alembic upgrade head` from `backend` and restart the API before using this feature.
 
 Frontend development uses port 8080 by default. If that port is occupied, Vite chooses another port; configure the backend's FRONTEND_URL to allow that origin.
 

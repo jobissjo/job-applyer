@@ -15,6 +15,8 @@ async def schedule(application_id, user_id, scheduled_at, db):
               selectinload(Application.cover_letter), selectinload(Application.resume)))).scalar_one_or_none()
     if not app:
         raise HTTPException(404, "Application not found")
+    if app.status == "applied_externally":
+        raise HTTPException(409, "This application was submitted elsewhere and cannot be scheduled")
     if app.status in ("sent", "sending", "scheduled"):
         raise HTTPException(409, "Application is already sent or scheduled")
     recipient = (app.hr_contact.email if app.hr_contact else None) or (app.job.contact_email if app.job else None)

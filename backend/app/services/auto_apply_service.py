@@ -110,9 +110,9 @@ class AutoApplyService:
                 existing = (await db.execute(select(Application).where(
                     Application.user_id == user_id, Application.job_id == db_job.id,
                 ))).scalars().first()
-                if existing and existing.status in ("sent", "scheduled", "sending"):
+                if existing and existing.status in ("sent", "scheduled", "sending", "applied_externally"):
                     job_log.update(application_id=existing.id, status=existing.status,
-                                   message="Already sent or scheduled; skipped this run.")
+                                   message="Already applied or scheduled; skipped this run.")
                     results.append(job_log)
                     continue
 

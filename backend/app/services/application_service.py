@@ -298,6 +298,8 @@ class ApplicationService:
         )
         res_app = await db.execute(stmt_app)
         application = res_app.scalars().first()
+        if application and application.status == "applied_externally":
+            raise HTTPException(status_code=409, detail="This application was submitted elsewhere and is saved for tracking only")
         if application and application.status in ("scheduled", "sending"):
             raise HTTPException(status_code=409, detail="Cancel the schedule before editing")
 
@@ -395,6 +397,9 @@ class ApplicationService:
 
         if not application:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+        if application.status == "applied_externally":
+            raise HTTPException(status_code=409, detail="This application was submitted elsewhere and cannot be sent")
 
         if application.status in ("scheduled", "sending") and not scheduled_dispatch:
             raise HTTPException(status_code=409, detail="Cancel the schedule before sending immediately")

@@ -54,6 +54,9 @@ async def list_jobs_requiring_hr_contact(
 
     stmt = select(Job).where(
         visible_jobs(current_user.id),
+        ~Job.id.in_(select(Application.job_id).where(
+            Application.user_id == current_user.id, Application.status == "applied_externally",
+        )),
         or_(
             and_(
                 or_(Job.contact_email == None, Job.contact_email == ""),

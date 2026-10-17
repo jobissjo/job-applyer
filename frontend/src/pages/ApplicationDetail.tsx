@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, ArrowRight, CheckCircle2, FileText, Loader2, Save, Send } from 'lucide-react';
 import { applicationsApi, resumesApi, formatApiError } from '../services/api';
 import { FollowUpPanel } from '../components/FollowUpPanel';
+import { ExternalApplicationDetail } from '../components/ExternalApplicationDetail';
 import { LearningPanel } from '../components/LearningPanel';
 import { StatusBadge } from '../components/StatusBadge';
 import type { Application, Resume } from '../types';
@@ -22,7 +23,7 @@ export const ApplicationDetail: React.FC = () => {
   const [retry,setRetry]=useState(0);
   useEffect(()=>{
     let active=true;setLoading(true);setError('');
-    Promise.all([applicationsApi.get(appId),resumesApi.list()]).then(([app,list])=>{
+    applicationsApi.get(appId).then(async app => [app, app.status === 'applied_externally' ? [] : await resumesApi.list()] as const).then(([app,list])=>{
       if(!active)return;setApplication(app);setResumes(list);setResumeId(app.resume_id || undefined);setSubject(app.email_subject||'Application for '+app.job?.title);setBody(app.cover_letter?.content||'');
     }).catch(err=>{if(active)setError(formatApiError(err,'Could not load this application.'));})
       .finally(()=>{if(active)setLoading(false);});
@@ -55,6 +56,7 @@ export const ApplicationDetail: React.FC = () => {
   };
   if(loading)return <div className="loading-state" role="status">Loading your applicationâ€¦</div>;
   if(!application)return <div className="card empty-state"><h1>Application unavailable</h1><p>{error}</p><button className="btn btn-secondary" onClick={()=>setRetry(n=>n+1)}>Try again</button><Link className="text-link" to="/applications" style={{marginLeft:16}}>Back to applications</Link></div>;
+  if(application.status==='applied_externally')return <ExternalApplicationDetail key={application.id} application={application} />;
   const sent=application.status==='sent';
   const scheduled=application.status==='scheduled';
   const locked=sent||scheduled||application.status==='sending';

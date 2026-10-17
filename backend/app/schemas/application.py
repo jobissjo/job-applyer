@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import date, datetime
+from uuid import UUID
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, AwareDatetime, field_validator
+from pydantic import BaseModel, ConfigDict, AwareDatetime, EmailStr, Field, HttpUrl, field_validator
 from datetime import timezone
 from app.schemas.job import JobOut
 from app.schemas.resume import ResumeOut
@@ -29,6 +30,40 @@ class ApplicationCreate(BaseModel):
     notes: Optional[str] = None
 
 
+class ExternalApplicationCreate(BaseModel):
+    request_id: UUID
+    role: str = Field(min_length=1, max_length=500)
+    company: str = Field(min_length=1, max_length=255)
+    applied_on: date
+    application_method: str = Field(min_length=1, max_length=255)
+    contact_email: Optional[EmailStr] = Field(default=None, max_length=255)
+    contact_name: Optional[str] = Field(default=None, max_length=255)
+    contact_phone: Optional[str] = Field(default=None, max_length=100)
+    job_url: Optional[HttpUrl] = None
+    description: Optional[str] = Field(default=None, max_length=50000)
+    notes: Optional[str] = Field(default=None, max_length=50000)
+
+    @field_validator("role", "company", "application_method", "contact_email", "contact_name",
+                     "contact_phone", "description", "notes", mode="before")
+    @classmethod
+    def trim_text(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("role", "company", "application_method")
+    @classmethod
+    def single_line(cls, value):
+        if "\n" in value or "\r" in value:
+            raise ValueError("Must be a single line")
+        return value
+
+    @field_validator("job_url")
+    @classmethod
+    def limit_url_length(cls, value):
+        if value is not None and len(str(value)) > 1000:
+            raise ValueError("Listing link is too long")
+        return value
+
+
 class ApplicationUpdate(BaseModel):
     resume_id: Optional[int] = None
     cover_letter_id: Optional[int] = None
@@ -51,6 +86,8 @@ class ApplicationOut(BaseModel):
     sent_to: Optional[str] = None
     sent_at: Optional[datetime] = None
     scheduled_at: Optional[datetime] = None
+    applied_on: Optional[date] = None
+    application_method: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime

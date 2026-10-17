@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
-from sqlalchemy import String, Text, DateTime, ForeignKey
+from sqlalchemy import String, Text, Date, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin
 
@@ -24,12 +24,14 @@ class Application(Base, TimestampMixin):
     hr_contact_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("hr_contacts.id", ondelete="SET NULL"), nullable=True
     )
-    # statuses: draft, hr_contact_required, ready, sent, failed, cancelled
+    # applied_externally records are tracking-only and cannot be dispatched.
     status: Mapped[str] = mapped_column(String(50), default="draft", index=True, nullable=False)
     email_subject: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     sent_to: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     scheduled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    applied_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    application_method: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     user: Mapped["User"] = relationship("User", back_populates="applications")

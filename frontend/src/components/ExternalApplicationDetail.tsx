@@ -1,0 +1,46 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { AlertCircle, ArrowLeft, CheckCircle2, ExternalLink, Loader2, Save } from 'lucide-react';
+import { applicationsApi, formatApiError } from '../services/api';
+import { StatusBadge } from './StatusBadge';
+import type { Application } from '../types';
+
+export function ExternalApplicationDetail({ application }: { application: Application }) {
+  const [savedNotes, setSavedNotes] = useState(application.notes || '');
+  const [notes, setNotes] = useState(savedNotes);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const save = async () => {
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const updated = await applicationsApi.update(application.id, { notes });
+      setSavedNotes(updated.notes || ''); setMessage('Tracking notes saved.');
+    } catch (err) { setError(formatApiError(err, 'Could not save your notes.')); }
+    finally { setBusy(false); }
+  };
+  const job = application.job;
+  return <div>
+    <Link to="/applications" className="text-link" style={{ marginBottom: 18 }}><ArrowLeft size={14} /> All applications</Link>
+    <div className="page-heading"><div><span className="eyebrow">Your application history</span><h1>{job?.title || 'Application details'}</h1><p>{job?.company}</p></div><StatusBadge status={application.status} /></div>
+    <div className="alert alert-success"><CheckCircle2 size={17} /><span>Submitted elsewhere and saved for tracking. No email was sent by JobApply.</span></div>
+    {error && <div className="alert alert-danger" role="alert"><AlertCircle size={16} />{error}</div>}
+    {message && <div className="alert alert-success" role="status"><CheckCircle2 size={16} />{message}</div>}
+    <div className="review-layout"><section className="card">
+      <h2 className="card-title">Application details</h2>
+      <dl>
+        <dt className="form-label">Applied on</dt><dd style={{ margin: '0 0 18px' }}>{application.applied_on ? new Date(application.applied_on + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Not recorded'}</dd>
+        <dt className="form-label">How you applied</dt><dd style={{ margin: '0 0 18px' }}>{application.application_method || 'Not recorded'}</dd>
+      </dl>
+      {job?.job_url && <a className="text-link" href={job.job_url} target="_blank" rel="noopener noreferrer">Listing / application link <ExternalLink size={14} /></a>}
+      {job?.description && <><h2 className="card-title" style={{ marginTop: 24 }}>Job description</h2><div className="job-detail-description">{job.description}</div></>}
+      <div className="form-group" style={{ marginTop: 24 }}><label htmlFor="tracking-notes" className="form-label">Tracking notes</label><textarea id="tracking-notes" className="form-textarea" rows={7} maxLength={50000} disabled={busy} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Record updates, application references, or next steps…" /></div>
+      <div className="review-save"><span>{notes !== savedNotes ? 'You have unsaved changes' : 'All notes saved'}</span><button className="btn btn-secondary" disabled={busy || notes === savedNotes} onClick={save}>{busy ? <Loader2 size={15} className="spinner" /> : <Save size={15} />}Save notes</button></div>
+    </section><aside className="card"><h2 className="card-title">HR / recruiter contact</h2><p className="card-subtitle">Contact details are optional for applications submitted elsewhere.</p>
+      {job?.contact_name && <p>{job.contact_name}</p>}
+      {job?.contact_email && <p>{job.contact_email}</p>}
+      {job?.contact_phone && <p>{job.contact_phone}</p>}
+      {!job?.contact_name && !job?.contact_email && !job?.contact_phone && <p className="card-subtitle">No contact details recorded.</p>}
+    </aside></div>
+  </div>;
+}
