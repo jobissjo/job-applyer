@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "ApplyPilot",
+    "slug": "apply-pilot",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/applypilot-icon.png",
+    "scheme": "applypilot",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "in.jotech.applypilot",
+      "supportsTablet": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#177c70",
+        "foregroundImage": "./assets/images/applypilot-mark.png",
+        "monochromeImage": "./assets/images/applypilot-mark.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "in.jotech.applypilot"
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/images/applypilot-icon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#177c70",
+          "image": "./assets/images/applypilot-mark.png",
+          "imageWidth": 152
+        }
+      ],
+      "expo-secure-store",
+      "expo-sharing"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "35517549-816b-4f89-a408-255e784518de"
+      }
+    }
+  }
+}

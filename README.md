@@ -190,6 +190,21 @@ JobApplyer/
 
 ---
 
+### Expo mobile app
+
+`mobile-app/` contains the native Expo app with the frontend's light teal design
+and workflows: account access, dashboard, job discovery, manual and Auto apply,
+application review and scheduling, external application tracking, follow-ups,
+resumes, recruiter contacts, learning, interview preparation, profile, target
+roles, AI providers, and SMTP settings.
+
+It connects to `https://api.apply-pilot.jotech.in/api` by default. From
+`mobile-app`, run `npm ci` then `npm start` and open it in an SDK 58 compatible
+Expo Go client. Use `npm run web` for the browser preview on port 8080. See
+[the mobile setup guide](mobile-app/README.md) for configuration, checks, and
+Android APK / iOS build commands. The web frontend uses the same production API
+by default; set `VITE_API_URL=http://localhost:8000/api` for local backend work.
+
 ### Step 2: Populate Jobs via Scraper
 
 In a new terminal (with the virtual environment activated):
