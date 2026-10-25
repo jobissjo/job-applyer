@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowUpRight, Briefcase, Cpu, FileText, LayoutDashboard, ListTodo, LogOut, Mail, Menu, PenLine, Send, UserCheck, UserRound, X, Zap } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, Briefcase, Cpu, FileText, LayoutDashboard, ListTodo, LogOut, Mail, Menu, PenLine, Send, UserCheck, UserRound, X, Zap } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { BookOpen } from 'lucide-react';
 import { authApi } from '../services/api';
@@ -12,6 +12,7 @@ const groups = [
     { label: 'Find jobs', path: '/jobs', icon: Briefcase },
     { label: 'Manual apply', path: '/manual-apply', icon: PenLine },
     { label: 'Applications', path: '/applications', icon: Send },
+    { label: 'Interviews & outcomes', path: '/interviews', icon: CalendarDays },
     { label: 'Auto apply', path: '/auto-apply', icon: Zap },
   ] },
   { label: 'Your toolkit', items: [

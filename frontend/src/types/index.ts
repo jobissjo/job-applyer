@@ -129,6 +129,7 @@ export interface CoverLetter {
 }
 
 export interface Application {
+  hiring_progress: 'awaiting_response' | 'callback_received' | 'interviewing' | 'selected' | 'not_selected' | 'withdrawn';
   id: number;
   user_id: number;
   job_id: number;

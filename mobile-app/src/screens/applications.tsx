@@ -1,3 +1,5 @@
+import { InterviewTrackingPanel } from '@/screens/interviews';
+import { progressLabels } from '@/services/interviews';
 import { useState } from "react";
 import { Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -36,6 +38,7 @@ export function Applications() {
       subtitle="From first introduction to your next interview."
       {...resource}
     >
+      <Nav label="Interviews & outcomes" href="/interviews" />
       <Nav label="Add already applied +" href="/external-application" />
       <Choice
         label="Status"
@@ -66,6 +69,7 @@ export function Applications() {
           </Text>
           <Text style={styles.muted}>{app.job?.company}</Text>
           <Badge value={app.status} />
+          {["sent", "applied_externally"].includes(app.status) && <Text style={styles.muted}>{progressLabels[app.hiring_progress]}</Text>}
           {!!(app.scheduled_at) && (
             <Text style={styles.muted}>
               Scheduled: {new Date(app.scheduled_at).toLocaleString()}
@@ -308,6 +312,7 @@ export function ApplicationDetail() {
             )}
           </Card>
           {app.status === "sent" && <FollowUps application={app} />}
+          {["sent", "applied_externally"].includes(app.status) && <InterviewTrackingPanel key={app.id} applicationId={app.id} />}
           <InterviewPreparation
             application={app}
             resumes={resource.data?.resumes || []}

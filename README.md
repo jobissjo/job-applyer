@@ -19,6 +19,30 @@ The light workspace groups navigation into Workspace, Your toolkit, and Settings
 
 Frontend development uses port 8080 by default. If that port is occupied, Vite chooses another port; configure the backend's FRONTEND_URL to allow that origin.
 
+### Interviews and hiring outcomes
+
+Open a sent application or an application submitted elsewhere to update its
+**Hiring progress**: Awaiting response, Callback received, Interviewing, Selected,
+Not selected, or Withdrawn. Tracked applications appear in **Interviews & outcomes**
+in the web sidebar and in the mobile Applications and More screens. The original
+application and its email delivery status stay available.
+
+Add multiple interview rounds with optional dates, mode, meeting link/location,
+contact details, and preparation notes. Each round supports To schedule, Scheduled,
+Completed, Missed, or Cancelled status; completed rounds can be Awaiting result,
+Passed, or Not passed. Record **How did my interview go?**, **What went wrong?**,
+**Feedback received**, and **What to improve next time** separately for each round.
+Edit/reschedule rounds and inspect the change history to see previous values.
+Past scheduled appointments show **Needs update** until you record what happened.
+You can record a selection or rejection directly without adding a round.
+
+Filter the tracker by upcoming interviews, needs update, awaiting results, or
+hiring progress, and search by role or company. Interview preparation is available
+from the tracker. This feature uses manual updates and does not send notifications
+or change existing email/follow-up schedules. Before using it, run
+`python -m alembic upgrade head` from `backend` and restart the API. See
+[the tracking guide](docs/interview-tracking.md).
+
 ### Learning from job requirements
 
 On any **application detail** page, choose **Prepare for interview** to generate a

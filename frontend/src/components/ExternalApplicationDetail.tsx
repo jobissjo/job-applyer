@@ -1,3 +1,4 @@
+import { InterviewTrackingPanel } from './InterviewTrackingPanel';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, CheckCircle2, ExternalLink, Loader2, Save } from 'lucide-react';
@@ -23,7 +24,7 @@ export function ExternalApplicationDetail({ application }: { application: Applic
   const job = application.job;
   return <div>
     <Link to="/applications" className="text-link" style={{ marginBottom: 18 }}><ArrowLeft size={14} /> All applications</Link>
-    <div className="page-heading"><div><span className="eyebrow">Your application history</span><h1>{job?.title || 'Application details'}</h1><p>{job?.company}</p></div><div className="heading-actions"><StatusBadge status={application.status} /><a href="#interview-preparation" className="btn btn-secondary">Prepare for interview</a></div></div>
+    <div className="page-heading"><div><span className="eyebrow">Your application history</span><h1>{job?.title || 'Application details'}</h1><p>{job?.company}</p></div><div className="heading-actions"><StatusBadge status={application.status} /><a href="#interview-tracking" className="btn btn-secondary">Update progress</a><a href="#interview-preparation" className="btn btn-secondary">Prepare for interview</a></div></div>
     <div className="alert alert-success"><CheckCircle2 size={17} /><span>Submitted elsewhere and saved for tracking. No email was sent by JobApply.</span></div>
     {error && <div className="alert alert-danger" role="alert"><AlertCircle size={16} />{error}</div>}
     {message && <div className="alert alert-success" role="status"><CheckCircle2 size={16} />{message}</div>}
@@ -43,6 +44,7 @@ export function ExternalApplicationDetail({ application }: { application: Applic
       {job?.contact_phone && <p>{job.contact_phone}</p>}
       {!job?.contact_name && !job?.contact_email && !job?.contact_phone && <p className="card-subtitle">No contact details recorded.</p>}
     </aside></div>
+    <InterviewTrackingPanel applicationId={application.id} />
     <InterviewPreparationPanel key={application.id} application={application} />
   </div>;
 }

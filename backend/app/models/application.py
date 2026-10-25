@@ -26,6 +26,7 @@ class Application(Base, TimestampMixin):
     )
     # applied_externally records are tracking-only and cannot be dispatched.
     status: Mapped[str] = mapped_column(String(50), default="draft", index=True, nullable=False)
+    hiring_progress: Mapped[str] = mapped_column(String(30), default="awaiting_response", server_default="awaiting_response", index=True, nullable=False)
     email_subject: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     sent_to: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -146,6 +146,7 @@ export function More() {
       <Card title="Your toolkit">
         <Nav label="My resumes" href="/resumes" />
         <Nav label="Target roles" href="/job-titles" />
+        <Nav label="Interviews & outcomes" href="/interviews" />
         <Nav label="Learning" href="/learning" />
       </Card>
       <Card title="Settings">

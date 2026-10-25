@@ -82,6 +82,7 @@ class ApplicationOut(BaseModel):
     cover_letter_id: Optional[int] = None
     hr_contact_id: Optional[int] = None
     status: str
+    hiring_progress: str = "awaiting_response"
     email_subject: Optional[str] = None
     sent_to: Optional[str] = None
     sent_at: Optional[datetime] = None

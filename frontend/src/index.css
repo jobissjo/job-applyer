@@ -332,3 +332,23 @@ tr:hover td { background: #fafcfb; }
 .interview-question { padding: 10px 0; border-bottom: 1px solid var(--border-color); }
 .interview-question summary { font-size: 13px; font-weight: 500; }
 .interview-question p { font-size: 13px; line-height: 1.7; margin-top: 10px; color: var(--text-muted); }
+
+/* Interview tracking */
+.interview-tracking { margin-top: 24px; scroll-margin-top: 24px; }
+.interview-tracking h2 { display: flex; align-items: center; gap: 9px; }
+.interview-tracking h3 { font-size: 15px; }
+.tracking-progress { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
+.tracking-progress > div { min-width: 220px; }
+.tracking-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; }
+.tracking-rounds { display: grid; gap: 16px; }
+.tracking-round, .tracking-editor { border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 16px; min-width: 0; }
+.tracking-editor h3 { margin-bottom: 20px; }
+.tracking-editor fieldset { border: 0; padding: 0; min-width: 0; }
+.tracking-notes { margin: 0; overflow-wrap: anywhere; }
+.tracking-notes dt { font-weight: 600; font-size: 12px; color: var(--text-muted); margin-top: 16px; }
+.tracking-notes dd { white-space: pre-wrap; font-size: 14px; line-height: 1.7; margin: 5px 0 0; }
+.tracking-history { margin-top: 24px; }
+.tracking-history summary { cursor: pointer; font-size: 14px; font-weight: 600; }
+.tracking-history article { padding: 18px 0; border-bottom: 1px solid var(--border-color); }
+.tracking-history h4 { font-size: 13px; margin-bottom: 6px; }
+@media (max-width: 768px) { .tracking-fields { grid-template-columns: 1fr; } .interview-tracking .section-header { flex-wrap: wrap; } }
