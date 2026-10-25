@@ -352,3 +352,13 @@ tr:hover td { background: #fafcfb; }
 .tracking-history article { padding: 18px 0; border-bottom: 1px solid var(--border-color); }
 .tracking-history h4 { font-size: 13px; margin-bottom: 6px; }
 @media (max-width: 768px) { .tracking-fields { grid-template-columns: 1fr; } .interview-tracking .section-header { flex-wrap: wrap; } }
+
+/* Native dialog supplies focus containment and restores focus to the trigger. */
+.delete-confirmation { margin: auto; max-width: 440px; color: var(--text-main); }
+.delete-confirmation::backdrop { background: #24323d80; backdrop-filter: blur(4px); }
+.delete-confirmation-icon { display: inline-flex; padding: 12px; border-radius: 12px; background: #fcf0f1; color: #b34352; margin-bottom: 16px; }
+.delete-confirmation h2 { margin-bottom: 12px; }
+.delete-confirmation p { color: var(--text-sub); overflow-wrap: anywhere; }
+.delete-confirmation-actions { justify-content: flex-end; margin-top: 24px; }
+[data-theme='dark'] .delete-confirmation::backdrop { background: #080f16b3; }
+[data-theme='dark'] .delete-confirmation-icon { background: #3c2530; color: #f2a5b4; }

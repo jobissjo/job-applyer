@@ -1,3 +1,4 @@
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { CardListSkeleton } from '../components/ListSkeleton';
 import React, { useEffect, useState } from 'react';
 import { Upload, Trash2, Download, FileText, Check, Plus, Tag } from 'lucide-react';
@@ -13,6 +14,7 @@ export const Resumes: React.FC = () => {
   const [selectedTitleIds, setSelectedTitleIds] = useState<number[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const [deletingResume, setDeletingResume] = useState<Resume | null>(null);
   const [success, setSuccess] = useState('');
 
   // Editing mapping modal state
@@ -93,14 +95,11 @@ export const Resumes: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Delete this resume?')) return;
-    try {
-      await resumesApi.delete(id);
-      fetchData();
-    } catch (err) {
-      setError(formatApiError(err, 'Could not complete the resume action.'));
-    }
+  const handleDelete = async () => {
+    if (!deletingResume) return;
+    await resumesApi.delete(deletingResume.id);
+    setDeletingResume(null);
+    await fetchData();
   };
 
   const openEditMapping = (r: Resume) => {
@@ -285,7 +284,7 @@ export const Resumes: React.FC = () => {
                       <Download size={14} />
                     </button>
                     <button
-                      onClick={() => handleDelete(r.id)}
+                      onClick={() => setDeletingResume(r)}
                       className="btn btn-danger btn-sm"
                       title="Delete Resume"
                     >
@@ -352,6 +351,7 @@ export const Resumes: React.FC = () => {
           </div>
         </div>
       )}
+      {deletingResume && <DeleteConfirmationModal title="Delete resume" itemName={deletingResume.title} onCancel={() => setDeletingResume(null)} onConfirm={handleDelete} />}
     </div>
   );
 };

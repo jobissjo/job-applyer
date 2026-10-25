@@ -1,3 +1,4 @@
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { TableSkeleton } from '../components/ListSkeleton';
 import React, { useEffect, useState } from 'react';
 import { Cpu, Plus, Trash2, CheckCircle2, XCircle, ArrowUpDown, Key } from 'lucide-react';
@@ -16,6 +17,7 @@ export const LLMProviders: React.FC = () => {
   const [testingId, setTestingId] = useState<number | null>(null);
   const [testResult, setTestResult] = useState<{ id: number; success: boolean; text: string } | null>(null);
   const [error, setError] = useState('');
+  const [deletingProvider, setDeletingProvider] = useState<LLMProvider | null>(null);
   const [success, setSuccess] = useState('');
 
   const fetchProviders = async () => {
@@ -75,14 +77,11 @@ export const LLMProviders: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Delete this LLM provider configuration?')) return;
-    try {
-      await llmApi.delete(id);
-      fetchProviders();
-    } catch (err) {
-      setError('Could not load or update your AI providers. Please try again.');
-    }
+  const handleDelete = async () => {
+    if (!deletingProvider) return;
+    await llmApi.delete(deletingProvider.id);
+    setDeletingProvider(null);
+    await fetchProviders();
   };
 
   const handleTest = async (id: number) => {
@@ -247,7 +246,7 @@ export const LLMProviders: React.FC = () => {
                           {testingId === p.id ? 'Testing...' : 'Test API'}
                         </button>
                         <button
-                          onClick={() => handleDelete(p.id)}
+                          onClick={() => setDeletingProvider(p)}
                           className="btn btn-danger btn-sm"
                           title="Delete Provider"
                         >
@@ -275,6 +274,7 @@ export const LLMProviders: React.FC = () => {
           </div>
         )}
       </div>
+      {deletingProvider && <DeleteConfirmationModal title="Delete AI provider" itemName={`${deletingProvider.provider} / ${deletingProvider.model}`} onCancel={() => setDeletingProvider(null)} onConfirm={handleDelete} />}
     </div>
   );
 };

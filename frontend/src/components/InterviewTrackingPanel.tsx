@@ -10,7 +10,7 @@ import {
 
 const entries = <T extends Record<string, string>>(labels: T) => Object.entries(labels) as [keyof T & string, string][];
 
-export function InterviewTrackingPanel({ applicationId }: { applicationId: number }) {
+export function InterviewTrackingPanel({ applicationId, roundsOnly = false }: { applicationId: number; roundsOnly?: boolean }) {
   const [data, setData] = useState<InterviewTracking>();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -50,16 +50,16 @@ export function InterviewTrackingPanel({ applicationId }: { applicationId: numbe
   const patch = <K extends keyof RoundInput>(key: K, value: RoundInput[K]) => setEditor(old => old && { ...old, [key]: value });
   const fieldId = (key: string) => `interview-${applicationId}-${key}`;
   return <section className="card interview-tracking" id="interview-tracking">
-    <div className="section-header"><div><h2><CalendarDays size={19} /> Interviews & outcomes</h2><p>Record every round and learn from the experience.</p></div><Link className="text-link" to="/interviews">Open tracker</Link></div>
+    <div className="section-header"><div><h2><CalendarDays size={19} /> {roundsOnly ? (data?.application.job?.title || 'Interview details') : 'Interviews & outcomes'}</h2><p>{roundsOnly ? data?.application.job?.company : 'Record every round and learn from the experience.'}</p></div><Link className="text-link" to="/interviews">Open tracker</Link></div>
     {error && <div className="alert alert-danger" role="alert">{error}</div>}
     {message && <div className="alert alert-success" role="status">{message}</div>}
     {!loaded ? <p role="status">Loading interview tracking…</p> : !data ? <button className="btn btn-secondary" onClick={() => setRetry(n => n + 1)}>Try again</button> : <>
-      <form className="tracking-progress" onSubmit={e => { e.preventDefault(); void run(() => interviewsApi.progress(applicationId, progress), 'Hiring progress saved.'); }}>
+      {!roundsOnly && <form className="tracking-progress" onSubmit={e => { e.preventDefault(); void run(() => interviewsApi.progress(applicationId, progress), 'Hiring progress saved.'); }}>
         <div><label className="form-label" htmlFor={fieldId('progress')}>Hiring progress</label><select className="form-select" id={fieldId('progress')} value={progress} disabled={busy} onChange={e => setProgress(e.target.value as HiringProgress)}>{entries(progressLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
         <button className="btn btn-secondary" disabled={busy || progress === data.application.hiring_progress}>Update progress</button>
-      </form>
+      </form>}
       <div className="section-header"><div><h3>Interview rounds</h3><p>Past appointments stay scheduled until you record what happened.</p></div><button className="btn btn-primary" disabled={busy || !!editor} onClick={() => edit()}><Plus size={15} /> Add round</button></div>
-      {!data.rounds.length && !editor && <p className="card-subtitle">No rounds recorded. Add your first interview, or update the hiring outcome directly.</p>}
+      {!data.rounds.length && !editor && <p className="card-subtitle">No rounds recorded. Add your first interview to track its schedule and outcome.</p>}
       <div className="tracking-rounds">{data.rounds.map(round => <article className="tracking-round" key={round.id}>
         <div className="section-header"><div><h3>{round.name}</h3><p>{roundStatusLabels[round.status]} · {round.status === 'completed' ? resultLabels[round.result] : modeLabels[round.mode]}</p></div><button className="btn btn-secondary btn-sm" disabled={busy || !!editor} onClick={() => edit(round)}>Edit / reschedule</button></div>
         {roundNeedsUpdate(round) && <p className="alert alert-warning">Needs update: this appointment has passed. Record whether you attended, missed it, or rescheduled.</p>}
@@ -91,7 +91,7 @@ export function InterviewTrackingPanel({ applicationId }: { applicationId: numbe
           <div className="heading-actions"><button className="btn btn-primary" disabled={!editor.name.trim()}>{busy ? 'Saving…' : 'Save round'}</button><button type="button" className="btn btn-secondary" onClick={() => setEditor(undefined)}>Cancel editing</button></div>
         </fieldset>
       </form>}
-      {!!data.history.length && <details className="tracking-history"><summary>Change history ({data.history.length})</summary>{data.history.map(change => <article key={change.id}><h4>{change.description}</h4><p className="card-subtitle">{utcDate(change.created_at).toLocaleString()}</p><dl className="tracking-notes">{historyChanges(change).map(key => <div key={key}><dt>{({ ...noteLabels, progress: 'Hiring progress', scheduled_at: 'Date & time' } as Record<string, string>)[key] || key.replace(/_/g, ' ')}</dt><dd>{key in change.before && <><span className="card-subtitle">Previously: {historyValue(key, change.before[key])}</span><br /></>}{historyValue(key, change.after[key])}</dd></div>)}</dl></article>)}</details>}
+      {!roundsOnly && !!data.history.length && <details className="tracking-history"><summary>Change history ({data.history.length})</summary>{data.history.map(change => <article key={change.id}><h4>{change.description}</h4><p className="card-subtitle">{utcDate(change.created_at).toLocaleString()}</p><dl className="tracking-notes">{historyChanges(change).map(key => <div key={key}><dt>{({ ...noteLabels, progress: 'Hiring progress', scheduled_at: 'Date & time' } as Record<string, string>)[key] || key.replace(/_/g, ' ')}</dt><dd>{key in change.before && <><span className="card-subtitle">Previously: {historyValue(key, change.before[key])}</span><br /></>}{historyValue(key, change.after[key])}</dd></div>)}</dl></article>)}</details>}
     </>}
   </section>;
 }

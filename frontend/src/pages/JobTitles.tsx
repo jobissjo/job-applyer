@@ -1,3 +1,4 @@
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { TableSkeleton } from '../components/ListSkeleton';
 import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Edit2, Check, X, ListTodo } from 'lucide-react';
@@ -11,6 +12,7 @@ export const JobTitles: React.FC = () => {
   const [editTitleText, setEditTitleText] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deletingRole, setDeletingRole] = useState<JobTitle | null>(null);
 
   const fetchTitles = async () => {
     try {
@@ -65,14 +67,11 @@ export const JobTitles: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Delete this job title preference?')) return;
-    try {
-      await jobTitlesApi.delete(id);
-      fetchTitles();
-    } catch (err) {
-      setError('Could not load or update your target roles. Please try again.');
-    }
+  const handleDelete = async () => {
+    if (!deletingRole) return;
+    await jobTitlesApi.delete(deletingRole.id);
+    setDeletingRole(null);
+    await fetchTitles();
   };
 
   return (
@@ -185,7 +184,7 @@ export const JobTitles: React.FC = () => {
                           <Edit2 size={14} />
                         </button>
                         <button
-                          onClick={() => handleDelete(t.id)}
+                          onClick={() => setDeletingRole(t)}
                           className="btn btn-danger btn-sm"
                           title="Delete"
                         >
@@ -200,6 +199,7 @@ export const JobTitles: React.FC = () => {
           </div>
         )}
       </div>
+      {deletingRole && <DeleteConfirmationModal title="Delete target role" itemName={deletingRole.title} onCancel={() => setDeletingRole(null)} onConfirm={handleDelete} />}
     </div>
   );
 };

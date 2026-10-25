@@ -18,6 +18,7 @@ import { AutoApply } from './pages/AutoApply';
 import { ManualApply } from './pages/ManualApply';
 import { AddExternalApplication } from './pages/AddExternalApplication';
 import { Interviews } from './pages/Interviews';
+import { InterviewDetail } from './pages/InterviewDetail';
 import { Learning } from './pages/Learning';
 
 export const App: React.FC = () => {
@@ -41,6 +42,7 @@ export const App: React.FC = () => {
           <Route path="/learning" element={<Learning />} />
           <Route path="/hr-contacts" element={<HRContacts />} />
           <Route path="/interviews" element={<Interviews />} />
+          <Route path="/interviews/:id" element={<InterviewDetail />} />
           <Route path="/applications" element={<Applications />} />
           <Route path="/applications/add" element={<AddExternalApplication />} />
           <Route path="/applications/:id" element={<ApplicationDetail />} />
