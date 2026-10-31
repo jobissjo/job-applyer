@@ -58,7 +58,7 @@ export const ApplicationDetail: React.FC = () => {
   };
   if(loading)return <div className="loading-state" role="status">Loading your applicationâ€¦</div>;
   if(!application)return <div className="card empty-state"><h1>Application unavailable</h1><p>{error}</p><button className="btn btn-secondary" onClick={()=>setRetry(n=>n+1)}>Try again</button><Link className="text-link" to="/applications" style={{marginLeft:16}}>Back to applications</Link></div>;
-  if(application.status==='applied_externally')return <ExternalApplicationDetail key={application.id} application={application} />;
+  if(application.status==='applied_externally')return <ExternalApplicationDetail key={application.id} application={application} onMoveToManual={()=>setRetry(n=>n+1)} />;
   const sent=application.status==='sent';
   const scheduled=application.status==='scheduled';
   const locked=sent||scheduled||application.status==='sending';

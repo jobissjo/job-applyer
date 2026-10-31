@@ -238,6 +238,12 @@ export const emailApi = {
 };
 
 export const applicationsApi = {
+  moveToManual: async (id: number) => {
+    return (await api.post<Application>(`/applications/${id}/move-to-manual`)).data;
+  },
+  listPage: async (params: { status?: string; page: number; limit: number }) => {
+    return (await api.get<{ items: Application[]; page: number; limit: number; total: number; has_next: boolean }>('/applications', { params })).data;
+  },
   recordExternal: async (data: { request_id: string; role: string; company: string; applied_on: string; application_method: string; contact_email?: string; contact_name?: string; contact_phone?: string; job_url?: string; description?: string; notes?: string }) => {
     return (await api.post<Application>('/applications/external', data)).data;
   },
@@ -253,7 +259,7 @@ export const applicationsApi = {
     const res = await api.post<Application>('/applications', data);
     return res.data;
   },
-  update: async (id: number, data: Partial<Omit<Application, 'resume_id'>> & { resume_id?: number | null; cover_letter_content?: string }) => {
+  update: async (id: number, data: Partial<Omit<Application, 'resume_id'>> & { resume_id?: number | null; cover_letter_content?: string; contact_name?: string | null; contact_email?: string | null; contact_phone?: string | null }) => {
     const res = await api.put<Application>(`/applications/${id}`, data);
     return res.data;
   },

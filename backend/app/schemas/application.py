@@ -72,6 +72,14 @@ class ApplicationUpdate(BaseModel):
     email_subject: Optional[str] = None
     status: Optional[str] = None
     notes: Optional[str] = None
+    contact_email: Optional[EmailStr] = Field(default=None, max_length=255)
+    contact_name: Optional[str] = Field(default=None, max_length=255)
+    contact_phone: Optional[str] = Field(default=None, max_length=100)
+
+    @field_validator("contact_email", "contact_name", "contact_phone", mode="before")
+    @classmethod
+    def trim_contact(cls, value):
+        return (value.strip() or None) if isinstance(value, str) else value
 
 
 class ApplicationOut(BaseModel):
@@ -106,6 +114,14 @@ class ApplicationOut(BaseModel):
         return value
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ApplicationPaginationResponse(BaseModel):
+    items: list[ApplicationOut]
+    page: int
+    limit: int
+    total: int
+    has_next: bool
 
 
 class ApplicationPreviewResponse(BaseModel):

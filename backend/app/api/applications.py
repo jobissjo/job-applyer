@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, func, or_, and_
+from sqlalchemy import select, func, or_, and_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
@@ -19,6 +19,7 @@ from app.schemas.application import (
     ExternalApplicationCreate,
     ApplicationUpdate,
     ApplicationOut,
+    ApplicationPaginationResponse,
     ApplicationPreviewResponse
 )
 from app.schemas.job import JobOut
@@ -32,9 +33,11 @@ from app.utils.security import get_current_user
 router = APIRouter(tags=["Applications"])
 
 
-@router.get("/applications", response_model=List[ApplicationOut])
+@router.get("/applications", response_model=ApplicationPaginationResponse | List[ApplicationOut])
 async def list_applications(
     status_filter: Optional[str] = Query(None, alias="status"),
+    page: Optional[int] = Query(None, ge=1),
+    limit: int = Query(10, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -47,10 +50,17 @@ async def list_applications(
             selectinload(Application.hr_contact)
         )
         .where(Application.user_id == current_user.id)
-        .order_by(Application.created_at.desc())
+        .order_by(Application.created_at.desc(), Application.id.desc())
     )
     if status_filter:
         stmt = stmt.where(Application.status == status_filter.lower().strip())
+
+    # Keep the list response for existing clients that do not request a page.
+    if page is not None:
+        total = (await db.execute(select(func.count()).select_from(
+            stmt.order_by(None).subquery()
+        ))).scalar_one()
+        stmt = stmt.offset((page - 1) * limit).limit(limit)
 
     res = await db.execute(stmt)
     apps = list(res.scalars().all())
@@ -81,6 +91,10 @@ async def list_applications(
                 cover_letter=CoverLetterOut.model_validate(app.cover_letter) if app.cover_letter else None,
                 hr_contact=HRContactOut.model_validate(app.hr_contact) if app.hr_contact else None
             )
+        )
+    if page is not None:
+        return ApplicationPaginationResponse(
+            items=out, page=page, limit=limit, total=total, has_next=page * limit < total,
         )
     return out
 
@@ -227,13 +241,27 @@ async def update_application(
     if not app:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
 
+    contact_fields = {"contact_name", "contact_email", "contact_phone"}
     if app.status == "applied_externally":
-        if payload.model_fields_set - {"notes"}:
-            raise HTTPException(status_code=400, detail="Only tracking notes can be changed for an application submitted elsewhere")
+        if payload.model_fields_set - ({"notes"} | contact_fields):
+            raise HTTPException(status_code=400, detail="Only tracking notes and contact details can be changed for an application submitted elsewhere")
+        changed_contacts = payload.model_fields_set & contact_fields
+        if changed_contacts:
+            job = (await db.execute(select(Job).join(ManualJobOwnership).where(
+                Job.id == app.job_id, ManualJobOwnership.user_id == current_user.id,
+            ))).scalar_one_or_none()
+            if not job:
+                raise HTTPException(status_code=404, detail="Job not found")
+            for field in changed_contacts:
+                value = getattr(payload, field)
+                setattr(job, field, str(value) if value is not None else None)
         if "notes" in payload.model_fields_set:
             app.notes = payload.notes
         await db.commit()
         return await get_application_by_id(application_id, current_user, db)
+
+    if payload.model_fields_set & contact_fields:
+        raise HTTPException(status_code=400, detail="Direct contact editing is only available for applications submitted elsewhere")
 
     if app.status in ("scheduled", "sending"):
         raise HTTPException(status_code=409, detail="Cancel the schedule before editing this application")
@@ -269,6 +297,27 @@ async def update_application(
         )
         app.cover_letter_id = letter.id
 
+    await db.commit()
+    return await get_application_by_id(application_id, current_user, db)
+
+
+@router.post("/applications/{application_id}/move-to-manual", response_model=ApplicationOut)
+async def move_external_application_to_manual(
+    application_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    app = (await db.execute(select(Application).where(
+        Application.id == application_id, Application.user_id == current_user.id,
+    ))).scalar_one_or_none()
+    if not app:
+        raise HTTPException(status_code=404, detail="Application not found")
+    result = await db.execute(update(Application).where(
+        Application.id == application_id, Application.user_id == current_user.id,
+        Application.status == "applied_externally",
+    ).values(status="draft", applied_on=None, application_method=None))
+    if not result.rowcount:
+        raise HTTPException(status_code=409, detail="Only an application marked as applied elsewhere can be moved to manual apply")
     await db.commit()
     return await get_application_by_id(application_id, current_user, db)
 

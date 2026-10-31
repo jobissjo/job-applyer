@@ -83,6 +83,81 @@ async def test_external_notes_and_privacy(client, user_a, user_b):
 
 
 @pytest.mark.asyncio
+async def test_move_external_to_manual_preserves_details_without_sending(client, user_a, user_b):
+    headers = user_a["headers"]
+    payload = external_payload(contact_email="hr@example.com", contact_name="Recruiter", description="Python role", notes="Interview reference")
+    data = (await client.post("/api/applications/external", headers=headers, json=payload)).json()
+    app_url = f"/api/applications/{data['id']}"
+    action = f"{app_url}/move-to-manual"
+    assert (await client.post(action, headers=user_b["headers"])).status_code == 404
+    with patch("app.services.email_service.EmailService.send_application_email", new_callable=AsyncMock) as send:
+        moved = await client.post(action, headers=headers)
+        assert moved.status_code == 200, moved.text
+        draft = moved.json()
+        assert draft["id"] == data["id"] and draft["job_id"] == data["job_id"]
+        assert draft["status"] == "draft"
+        assert draft["applied_on"] is draft["application_method"] is None
+        assert draft["notes"] == "Interview reference"
+        assert draft["job"]["contact_email"] == "hr@example.com"
+        assert draft["job"]["description"] == "Python role"
+        assert draft["hiring_progress"] == data["hiring_progress"]
+        assert draft["sent_at"] is draft["sent_to"] is draft["scheduled_at"] is None
+        assert (await client.post(action, headers=headers)).status_code == 409
+        saved = await client.put(app_url, headers=headers, json={
+            "email_subject": "My application", "cover_letter_content": "My introduction",
+        })
+        assert saved.status_code == 200, saved.text
+        assert saved.json()["cover_letter"]["content"] == "My introduction"
+        preview = (await client.get(f"{app_url}/preview", headers=headers)).json()
+        assert preview["can_send"] is True and preview["recipient_email"] == "hr@example.com"
+        reloaded = (await client.get(app_url, headers=headers)).json()
+        assert reloaded["status"] == "draft" and reloaded["notes"] == payload["notes"]
+        send.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_move_external_without_contact_requires_contact_before_sending(client, user_a):
+    headers = user_a["headers"]
+    data = (await client.post("/api/applications/external", headers=headers, json=external_payload())).json()
+    app_url = f"/api/applications/{data['id']}"
+    assert (await client.post(f"{app_url}/move-to-manual", headers=headers)).status_code == 200
+    preview = (await client.get(f"{app_url}/preview", headers=headers)).json()
+    assert preview["can_send"] is False
+    assert "contact" in preview["reason_cannot_send"]
+
+
+@pytest.mark.asyncio
+async def test_external_contact_updates_and_privacy(client, user_a, user_b):
+    headers = user_a["headers"]
+    data = (await client.post("/api/applications/external", headers=headers, json=external_payload(notes="Interview scheduled"))).json()
+    app_url = f"/api/applications/{data['id']}"
+    contact = {"contact_name": " Recruiter ", "contact_email": " hr@example.com ", "contact_phone": " +91 1234567890 "}
+    assert (await client.put(app_url, headers=user_b["headers"], json=contact)).status_code == 404
+    with patch("app.services.email_service.EmailService.send_application_email", new_callable=AsyncMock) as send:
+        saved = await client.put(app_url, headers=headers, json=contact)
+        assert saved.status_code == 200, saved.text
+        for field, value in contact.items():
+            assert saved.json()["job"][field] == value.strip()
+        reloaded = (await client.get(app_url, headers=headers)).json()
+        assert reloaded["job"]["contact_email"] == "hr@example.com"
+        assert reloaded["notes"] == "Interview scheduled"
+        assert reloaded["status"] == "applied_externally"
+        assert reloaded["sent_at"] is reloaded["sent_to"] is None
+        edited = await client.put(app_url, headers=headers, json={"contact_phone": "98765"})
+        assert edited.json()["job"]["contact_name"] == "Recruiter"
+        assert edited.json()["job"]["contact_phone"] == "98765"
+        invalid = await client.put(app_url, headers=headers, json={"contact_email": "invalid", "contact_name": "Changed"})
+        assert invalid.status_code == 422
+        assert (await client.get(app_url, headers=headers)).json()["job"]["contact_name"] == "Recruiter"
+        assert (await client.put(app_url, headers=headers, json={"contact_name": "Changed", "status": "ready"})).status_code == 400
+        cleared = await client.put(app_url, headers=headers, json={"contact_email": " ", "contact_name": None, "contact_phone": ""})
+        assert cleared.status_code == 200
+        assert all(cleared.json()["job"][field] is None for field in contact)
+        assert (await client.post(f"{app_url}/send", headers=headers)).status_code == 409
+        send.assert_not_called()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("overrides", [{"role": "   "}, {"company": ""}, {"application_method": "  "}, {"contact_email": "invalid"}, {"job_url": "javascript:alert(1)"}, {"applied_on": "invalid"}, {"role": "Role\nExtra"}])
 async def test_external_validation(client, user_a, overrides):
     response = await client.post("/api/applications/external", headers=user_a["headers"], json=external_payload(**overrides))
