@@ -3,7 +3,8 @@ import shutil
 import uuid
 from pathlib import Path
 from typing import Optional, List
-from fastapi import UploadFile
+from fastapi import UploadFile, HTTPException
+from starlette.concurrency import run_in_threadpool
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -18,6 +19,17 @@ from app.utils.logger import logger
 
 
 class ResumeService:
+    @staticmethod
+    async def validate_mappings(user_id: int, job_title_ids: List[int], db: AsyncSession):
+        ids = list(dict.fromkeys(job_title_ids))
+        if ids:
+            owned = set((await db.scalars(select(JobTitlePreference.id).where(
+                JobTitlePreference.id.in_(ids), JobTitlePreference.user_id == user_id
+            ))).all())
+            if owned != set(ids):
+                raise HTTPException(404, "Job title not found")
+        return ids
+
     @staticmethod
     def extract_text_from_file(file_path: Path, ext: str) -> str:
         text = ""
@@ -45,6 +57,7 @@ class ResumeService:
         db: AsyncSession,
         job_title_ids: Optional[List[int]] = None
     ) -> Resume:
+        job_title_ids = await ResumeService.validate_mappings(user_id, job_title_ids or [], db)
         filename = upload_file.filename or "resume.pdf"
         ext = filename.split(".")[-1].lower() if "." in filename else "pdf"
         if ext not in ["pdf", "docx", "doc"]:
@@ -55,11 +68,13 @@ class ResumeService:
         target_path = settings.RESUME_DIR / unique_filename
 
         # Write uploaded file
-        with open(target_path, "wb") as buffer:
-            shutil.copyfileobj(upload_file.file, buffer)
+        def copy_upload():
+            with open(target_path, "wb") as buffer:
+                shutil.copyfileobj(upload_file.file, buffer)
+        await run_in_threadpool(copy_upload)
 
         # Extract text
-        extracted_text = ResumeService.extract_text_from_file(target_path, ext)
+        extracted_text = await run_in_threadpool(ResumeService.extract_text_from_file, target_path, ext)
 
         resume = Resume(
             user_id=user_id,
@@ -88,6 +103,10 @@ class ResumeService:
         job_title_ids: List[int],
         db: AsyncSession
     ):
+        resume = await db.get(Resume, resume_id)
+        if not resume:
+            raise HTTPException(404, "Resume not found")
+        job_title_ids = await ResumeService.validate_mappings(resume.user_id, job_title_ids, db)
         # Remove existing links
         await db.execute(
             delete(ResumeJobTitle).where(ResumeJobTitle.resume_id == resume_id)

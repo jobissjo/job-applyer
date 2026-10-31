@@ -1,4 +1,5 @@
 export interface User {
+  is_email_verified: boolean;
   id: number;
   email: string;
   is_active: boolean;

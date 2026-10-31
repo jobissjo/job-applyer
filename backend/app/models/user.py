@@ -1,5 +1,6 @@
 from typing import List, Optional
-from sqlalchemy import String, Boolean
+from datetime import datetime
+from sqlalchemy import String, Boolean, DateTime, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base, TimestampMixin
 
@@ -11,6 +12,11 @@ class User(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    verification_code_hash: Mapped[Optional[str]] = mapped_column(String(64))
+    verification_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    verification_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    verification_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # Relationships with cascade delete
     profile: Mapped[Optional["UserProfile"]] = relationship(

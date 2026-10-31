@@ -39,7 +39,6 @@ type Session = {
   signIn: (
     email: string,
     password: string,
-    register?: boolean,
   ) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -83,8 +82,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
     void Promise.resolve().then(restore);
     return () => setSessionExpiredHandler();
   }, [restore, signOut]);
-  const signIn = async (email: string, password: string, register = false) => {
-    if (register) await authApi.register(email.trim(), password);
+  const signIn = async (email: string, password: string) => {
     const result = await authApi.login(email.trim(), password);
     setAuthToken(result.access_token);
     try {

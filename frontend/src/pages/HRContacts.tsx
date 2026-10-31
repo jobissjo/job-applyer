@@ -374,16 +374,18 @@ export const HRContacts: React.FC = () => {
               </div>
               <div>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>
-                  Delete Job Listing
+                  Remove Job Listing
                 </h3>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  This action cannot be undone
+                  Remove from your workspace
                 </div>
               </div>
             </div>
 
             <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.5, marginBottom: '16px' }}>
-              Are you sure you want to permanently delete this job listing? It will be removed from your missing HR contacts queue and all associated drafts will be deleted.
+              {jobToDelete.source === 'manual'
+                ? 'Delete your manual job listing and its associated applications?'
+                : 'Remove this listing from your job lists and missing HR contacts queue? Your existing applications and other users’ records will be kept.'}
             </p>
 
             <div
@@ -423,7 +425,7 @@ export const HRContacts: React.FC = () => {
                   border: 'none',
                 }}
               >
-                {deletingJob ? 'Deleting...' : 'Yes, Delete Job'}
+                {deletingJob ? 'Removing...' : 'Yes, Remove Job'}
               </button>
             </div>
           </div>

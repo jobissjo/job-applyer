@@ -1,5 +1,6 @@
 from app.db.base import Base, TimestampMixin
 from app.models.user import User
+from app.models.security import HiddenJob, RevokedToken, LoginAttempt
 from app.models.profile import UserProfile
 from app.models.job_title import JobTitlePreference
 from app.models.resume import Resume

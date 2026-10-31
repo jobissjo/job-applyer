@@ -26,6 +26,15 @@ class Settings(BaseSettings):
     
     # Frontend CORS
     FRONTEND_URL: str = "http://localhost:5173"
+
+    # App-owned SMTP account for registration verification.
+    AUTH_SMTP_HOST: str = ""
+    AUTH_SMTP_PORT: int = 587
+    AUTH_SMTP_USERNAME: str = ""
+    AUTH_SMTP_PASSWORD: str = ""
+    AUTH_SMTP_FROM_EMAIL: str = ""
+    AUTH_SMTP_START_TLS: bool = True
+    AUTH_SMTP_USE_TLS: bool = False
     
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -79,7 +79,7 @@ import uuid
 async def user_a(db_session):
     uid = uuid.uuid4().hex[:6]
     email = f"user_a_{uid}@example.com"
-    u = User(email=email, hashed_password=hash_password("Password123!"))
+    u = User(email=email, hashed_password=hash_password("Password123!"), is_email_verified=True)
     db_session.add(u)
     await db_session.flush()
     prof = UserProfile(user_id=u.id, name="User A", current_company="Alpha Corp")
@@ -94,7 +94,7 @@ async def user_a(db_session):
 async def user_b(db_session):
     uid = uuid.uuid4().hex[:6]
     email = f"user_b_{uid}@example.com"
-    u = User(email=email, hashed_password=hash_password("Password123!"))
+    u = User(email=email, hashed_password=hash_password("Password123!"), is_email_verified=True)
     db_session.add(u)
     await db_session.flush()
     prof = UserProfile(user_id=u.id, name="User B", current_company="Beta LLC")

@@ -12,6 +12,7 @@ from app.models.application import Application
 from app.services.scraper.registry import get_scraper
 from app.services.resume_service import ResumeService
 from app.services.application_service import ApplicationService
+from app.services.job_access import visible_jobs
 from scripts.scraper_utils import upsert_scraped_jobs
 from app.utils.logger import logger
 
@@ -86,7 +87,7 @@ class AutoApplyService:
         hr_required_count = 0
 
         for sj in scraped_jobs:
-            stmt_job = select(Job).where(Job.source == sj.source, Job.source_job_id == sj.source_job_id)
+            stmt_job = select(Job).where(Job.source == sj.source, Job.source_job_id == sj.source_job_id, visible_jobs(user_id))
             res_job = await db.execute(stmt_job)
             db_job = res_job.scalars().first()
             if not db_job:

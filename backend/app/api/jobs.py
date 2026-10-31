@@ -8,6 +8,8 @@ from app.db.session import get_db
 from app.models.user import User
 from app.models.job import Job
 from app.models.manual_job import ManualJobOwnership
+from app.models.security import HiddenJob
+from app.db.statements import insert_do_nothing
 from app.models.application import Application
 from app.models.hr_contact import HRContact
 from app.schemas.job import JobOut, JobPaginationResponse, JobAnalyzeResponse, ManualJobCreate
@@ -169,6 +171,8 @@ async def get_job(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    if await db.get(HiddenJob, (current_user.id, job_id)):
+        raise HTTPException(status_code=404, detail="Job not found")
     job = await get_accessible_job(job_id, current_user.id, db)
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
@@ -253,11 +257,19 @@ async def delete_job(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    if await db.get(HiddenJob, (current_user.id, job_id)):
+        raise HTTPException(status_code=404, detail="Job not found")
     job = await get_accessible_job(job_id, current_user.id, db)
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
-    await db.delete(job)
+    if job.source == "manual":
+        await db.delete(job)
+    else:
+        # Shared listings must never cascade-delete other users' applications.
+        await db.execute(insert_do_nothing(db, HiddenJob,
+            values={"user_id": current_user.id, "job_id": job.id},
+            index_elements=["user_id", "job_id"]))
     await db.commit()
     return None
 

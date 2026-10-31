@@ -33,6 +33,18 @@ export const MainLayout: React.FC = () => {
   const { pathname } = useLocation();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const signOut = async () => {
+    setSigningOut(true);
+    let logoutWarning = '';
+    try { await authApi.logout(); }
+    catch { logoutWarning = 'Signed out on this device. The online session could not be ended and may remain active until it expires.'; }
+    finally {
+      localStorage.removeItem('token');
+      navigate('/login', { state: { logoutWarning } });
+      setSigningOut(false);
+    }
+  };
   const currentPage = groups.flatMap(group => group.items).find(item => pathname === item.path || pathname.startsWith(item.path + '/'));
   useEffect(() => {
     if (!localStorage.getItem('token')) { navigate('/login'); return; }
@@ -66,7 +78,7 @@ export const MainLayout: React.FC = () => {
         <div className="sidebar-footer">
           <div className="user-avatar">{currentUser?.email.charAt(0).toUpperCase() || 'J'}</div>
           <div className="user-info"><strong>{currentUser?.email.split('@')[0] || 'Your workspace'}</strong><span>Personal workspace</span></div>
-          <button onClick={() => { localStorage.removeItem('token'); navigate('/login'); }} className="icon-button" aria-label="Sign out" title="Sign out"><LogOut size={17} /></button>
+          <button onClick={() => void signOut()} disabled={signingOut} className="icon-button" aria-label="Sign out" title="Sign out"><LogOut size={17} /></button>
         </div>
       </aside>
       <div className="main-content">

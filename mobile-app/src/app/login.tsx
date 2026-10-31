@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { authApi } from "@/services/api";
 import { Text, View } from "react-native";
 import { useSession } from "@/providers/session";
 import { useAction } from "@/hooks/use-resource";
@@ -9,6 +10,9 @@ export default function Login() {
   const [register, setRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [code, setCode] = useState("");
+  const [notice, setNotice] = useState("");
   return (
     <Page
       title={register ? "Start your next chapter." : "Welcome back."}
@@ -30,7 +34,7 @@ export default function Login() {
         </Text>
       </View>
       <Card
-        title={register ? "Create your account" : "Sign in to your workspace"}
+        title={verifying ? "Verify your email" : register ? "Create your account" : "Sign in to your workspace"}
       >
         <Field
           label="Email address"
@@ -40,37 +44,65 @@ export default function Login() {
           onChangeText={setEmail}
           editable={!action.busy}
         />
-        <Field
+        {!verifying && <Field
           label="Password"
           secureTextEntry
           autoComplete={register ? "new-password" : "current-password"}
           value={password}
           onChangeText={setPassword}
           editable={!action.busy}
-        />
+        />}
+        {verifying && <>
+          <Text style={styles.muted}>Enter the six-digit code from your inbox. It expires in 10 minutes. Check spam too.</Text>
+          <Field label="Verification code" value={code} onChangeText={setCode} editable={!action.busy} />
+        </>}
         <Feedback {...action} />
+        {!!notice && <Text style={styles.muted}>{notice}</Text>}
         <Button
           label={
             action.busy
               ? "Connecting…"
-              : register
+              : verifying ? "Verify email" : register
                 ? "Create account"
                 : "Sign in"
           }
-          disabled={action.busy || !email.trim() || !password}
+          disabled={action.busy || !email.trim() || (verifying ? !/^\d{6}$/.test(code.trim()) : !password)}
           onPress={() => {
-            void action.run(() => signIn(email, password, register));
+            void action.run(async () => {
+              setNotice("");
+              if (verifying) {
+                const result = await authApi.verifyEmail(email.trim(), code.trim());
+                setVerifying(false); setRegister(false); setCode("");
+                setNotice(result.message);
+                return;
+              }
+              if (register) {
+                await authApi.register(email.trim(), password);
+                setVerifying(true); setPassword("");
+                setNotice("Check your email for a verification code.");
+                return;
+              }
+              await signIn(email, password);
+            });
           }}
         />
+        <Button label={verifying ? "Resend code" : "Verify email / resend code"} secondary disabled={action.busy || !email.trim()}
+          onPress={() => { void action.run(async () => {
+            setNotice("");
+            const result = await authApi.resendVerification(email.trim());
+            setVerifying(true);
+            setNotice(result.message);
+          }); }} />
+        {verifying && <Text style={styles.muted}>Wait 60 seconds between requests. Only the latest code works.</Text>}
         <Button
           label={
-            register
+            verifying ? "Back to sign in" : register
               ? "Already have an account? Sign in"
               : "New here? Create an account"
           }
           secondary
           disabled={action.busy}
-          onPress={() => setRegister(!register)}
+          onPress={() => { setVerifying(false); setRegister(verifying ? false : !register); }}
         />
       </Card>
     </Page>

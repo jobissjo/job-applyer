@@ -72,6 +72,44 @@ Learning. All learning data is private to your account. Run `python -m alembic
 upgrade head` from `backend` and restart the API for this update. See
 [the implementation plan](docs/learning-plan.md).
 
+### Registration email verification
+
+New accounts receive a six-digit email code and must verify it before signing in
+on web or mobile. Codes expire after 10 minutes and allow five attempts. Resend is
+available on the verification screen, with a 60-second cooldown. Existing accounts
+retain access when the migration runs.
+
+Configure the `AUTH_SMTP_*` values in `backend/.env` using
+[`backend/.env.example`](backend/.env.example). This app-owned sender is separate
+from each user's job-application SMTP settings. Set the host, username, password,
+and sender address supplied by your mail provider. Port 587 uses STARTTLS; port
+465 automatically uses implicit TLS. For a local test mail server only, set
+`AUTH_SMTP_START_TLS=False` when it does not support TLS. SMTP credentials and
+verification codes are never returned by the API; only a keyed hash of each code
+is stored. Missing or failing SMTP prevents registration and returns a retryable
+error instead of creating an unusable account.
+
+Before restarting the API, run from `backend`:
+
+```powershell
+..\venv\Scripts\python.exe -m alembic upgrade head
+```
+
+To check delivery, create an account with an inbox you control, enter the code,
+then sign in. Use **Verify your email / resend code** on the login screen to
+resume verification later.
+
+### Security changes for existing deployments
+
+Run `python -m alembic upgrade head` before deploying the updated backend, then
+deploy the web build. Existing accounts, passwords, and active tokens remain
+valid. Shared job removal now affects only your job lists and keeps application
+history; website logout revokes just that session. New accounts require an
+eight-character password, and repeated failed logins are limited per client and
+email. See [the compatibility and remaining-risk notes](docs/security-fixes-compatibility.md).
+Several audited risks, including a deployed sample signing key, remain deferred
+because fixing them requires changes that may disrupt existing users.
+
 ## 🎯 Key Features
 
 1. **Local-First & Multi-User Isolated**:

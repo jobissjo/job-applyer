@@ -41,7 +41,7 @@ async def list_resumes(
         mapped_titles = [
             JobTitleOut.model_validate(link.job_title)
             for link in r.job_titles
-            if link.job_title
+            if link.job_title and link.job_title.user_id == current_user.id
         ]
         r_out = ResumeOut(
             id=r.id,
@@ -98,6 +98,7 @@ async def get_resume_by_id(
             selectinload(Resume.job_titles).selectinload(ResumeJobTitle.job_title)
         )
         .where(Resume.id == resume_id, Resume.user_id == current_user.id)
+        .execution_options(populate_existing=True)
     )
     res = await db.execute(stmt)
     resume = res.scalar_one_or_none()
@@ -108,7 +109,7 @@ async def get_resume_by_id(
     mapped_titles = [
         JobTitleOut.model_validate(link.job_title)
         for link in resume.job_titles
-        if link.job_title
+        if link.job_title and link.job_title.user_id == current_user.id
     ]
     return ResumeOut(
         id=resume.id,
@@ -138,6 +139,10 @@ async def update_resume(
 
     if not resume:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume not found")
+
+    # Reject invalid mappings before mutating any fields.
+    if payload.job_title_ids is not None:
+        await ResumeService.validate_mappings(current_user.id, payload.job_title_ids, db)
 
     if payload.title is not None:
         resume.title = payload.title.strip()
